@@ -52,6 +52,7 @@ void carregarMapaSalvoEmArquivo(Jogo *jogo, char *nomeArquivoMapa);
 void carregarPersonagensSalvosEmArquivo(Personagem *heroi, Personagem *monstros);
 void salvarMapaEmMapasSalvos(char *nomeDoMapa);
 void draw_map (char* name);
+void nomedoarquivomapa(int x);
 
 int main(int argc, char const *argv[]){
 	Personagem *heroi = (Personagem*) malloc(sizeof(Personagem));
@@ -68,7 +69,8 @@ int main(int argc, char const *argv[]){
 					case 'W': // CONFIGURAÇÕES DOS MAPAS
 						switch(pegarOpcaoMenu("templates/map_options")){
 							case 'W': //SELECIONAR UM MAPA
-								carregarMapasSalvos();
+								nomedoarquivomapa(carregarMapasSalvos());// ######n excluir##### função que retorna o nome do mapa escolhido pelo jogador
+
 							break;
 							case 'S': //CRIAR UM MAPA
 								system("cls");
@@ -287,7 +289,7 @@ void carregarPersonagensSalvosEmArquivo(Personagem *heroi, Personagem *monstros)
 	* 	Essa função carrega um arquivo de texto e exibe-o na tela.
 	*
 ***/
-void exibirArquivo(char *nomeDoArquivo){
+void exibirArquivo(char *nomeDoArquivo){// função que mostra um arquivo na tela
 	FILE *file;
 	file = fopen(nomeDoArquivo, "r");
 	if(file == NULL){
@@ -306,21 +308,45 @@ void exibirArquivo(char *nomeDoArquivo){
 	fclose(file);
 }
 
-void draw_map (char* name)
+/***
+	*
+	*	Esta função retorna o nome do mapa que o jogador escolheu
+	*  
+	*
+***/
+void nomedoarquivomapa(int x){
+	int i;
+	char* name=(char*) malloc(100*sizeof(char));
+	FILE* arq;
+	arq = fopen("mapas.txt","r");
+ 	for (i = 0; i <= x; ++i)
+ 	{
+ 		fgets(name,100,arq);
+ 	}
+ 	fclose(arq);
+ 	for (i = 0; name[i] !='\n'; ++i);
+ 	name[i]='\0';
+
+}
+/***
+	*
+	*	Esta função cria um novo mapa segundo o jogador
+	*  
+	*
+***/
+
+void draw_map (char* name)// função que cria mapa
 {
 	char** matriz;
 	int dim = 0, i = 0, j = 0,num;
-	char aux[100]={'m','a','p','a','s','/','\0'},aux2[5]={'.','t','x','t','\0'};
+	char aux[100]={'m','a','p','a','s','/','\0'},aux2[5]={'.','t','x','t','\0'};// fazendo alguns ajuste no caminho do arquivo
 	FILE* arq;
-	//for (i = 0; name[i] !='\n'; ++i);
-	//name[i]='\0';
-	strcat(name,aux2);
+	strcat(name,aux2);// com ajuda dessa função
 	strcat(aux,name);
-	//printf("%s",aux);
-	printf("Digite n na forma que (((n*4)+5) vai ser o tamanho real do mapa):");
+	printf("Digite n na forma que (((n*4)+5) vai ser o tamanho real do mapa):");// pedindo o n
 	scanf("%d", &num);
 	dim = (4*num)+5;
-	printf("Digite o mapa  %d x %d:\n",dim,dim);
+	printf("Digite o mapa  %d x %d:\n",dim,dim);// pedindo o mapa
 	matriz = (char**) malloc(dim*sizeof(char*));
 	if (matriz == NULL) {
 		exit (1);
@@ -328,30 +354,31 @@ void draw_map (char* name)
 	for (i = 0; i <= dim; i++) {
 		matriz[i] = (char*) malloc((dim+1)*sizeof(char));
 		if (matriz[i] == NULL) {
+			printf("Erro mapa muito grande\n");// conferindo se o mapa n foi muito grande e a memória n pode ser alocada
 			exit (1);
 		}
 	}
-	for (i = 0; i < dim; i++)
-		for (j = 0; j < dim+1; j++)
-			scanf("%c", &matriz[i][j]);
+	for (i = 0; i < dim; i++)// pedindo o mapa
+		for (j = 0; j < dim+1; j++)// pedindo o mapa
+			scanf("%c", &matriz[i][j]);// pedindo o mapa
 	arq = fopen(aux,"w");
-	for (i = 0; i < dim; ++i)
+	for (i = 0; i < dim; ++i)// transformando o limite do mapa em uma cerca
 	{
-		for (j = 0; j < dim; ++j)
+		for (j = 0; j <= dim; ++j)// transformando o limite do mapa em uma cerca
 		{
-			if(i!=0 && i!= dim-1 && (j==0 || j==dim-1))matriz[i][j]='|';
-			if(i==0 && j==0)matriz[i][j]='/';
-			else if(i==0 && j==dim-1)matriz[i][j]='\\';
-			else if(i==0)matriz[i][j]='-';
+			if(i!=0 && i!= dim-1 && (j==0 || j==dim))matriz[i][j]='|';
+			if(i==0 && j==0)matriz[i][j]='/';// transformando o limite do mapa em uma cerca
+			else if(i==0 && j==dim)matriz[i][j]='\\';
+			else if(i==0)matriz[i][j]='-';// transformando o limite do mapa em uma cerca
 			if(i==dim-1 && j==0)matriz[i][j]='\\';
-			else if(i==dim-1 && j==dim-1)matriz[i][j]='/';
-			else if (i==dim-1)matriz[i][j]='-';
+			else if(i==dim-1 && j==dim)matriz[i][j]='/';
+			else if (i==dim-1)matriz[i][j]='-';// transformando o limite do mapa em uma cerca
 		}
 	}
-	fprintf(arq, "%d\n", dim);
+	fprintf(arq, "%d\n", dim);// passando a dimensão do mapa para o arquivo
 	for (i = 0; i < dim; i++) {
-		for (j = 0; j < dim; j++){
-			fprintf(arq, "%c", matriz[i][j]);
+		for (j = 0; j <= dim; j++){
+			fprintf(arq, "%c", matriz[i][j]);// passando mapa para o arquivo
 		}
 		fprintf(arq,"\n");
 	}
