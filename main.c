@@ -68,6 +68,7 @@ int main(int argc, char const *argv[]){
 					case 'W': // CONFIGURAÇÕES DOS MAPAS
 						switch(pegarOpcaoMenu("templates/map_options")){
 							case 'W': //SELECIONAR UM MAPA
+								carregarMapasSalvos();
 							break;
 							case 'S': //CRIAR UM MAPA
 								system("cls");
