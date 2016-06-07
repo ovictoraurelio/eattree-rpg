@@ -37,24 +37,46 @@ typedef struct{
 	*
 ***/
 char pegarOpcaoMenu();
-void exibirMenu(char *ultimo, char *opcao);
-void inicarJogo(Personagem *heroi, Personagem *monstros, Jogo *atual);
+void exibirMenu(char *arquivoDeMenu, char *ultimo, char *opcao);
+void exibirArquivo(char *nomeDoArquivo);
+void iniciarJogo(Personagem *heroi, Personagem *monstros, Jogo *atual);
 void carregarJogo(Personagem *heroi, Personagem *monstros, Jogo *atual);
 void criarJogo(Personagem *heroi, Personagem *monstros, Jogo *atual);
-void substituir(char *texto, char *busca, char c);
+void alterarCaracterPrePalavra(char *texto, char *busca, char c);
+void carregarMapaSalvoEmArquivo(Jogo *jogo, char *nomeArquivoMapa);
+void carregarPersonagensSalvosEmArquivo(Personagem *heroi, Personagem *monstros);
 
 int main(int argc, char const *argv[]){
 	Personagem *heroi, *monstros;
 	Jogo *jogoAtual;
 
-	switch(pegarOpcaoMenu()){// De acordo com a opção que o menu retornar
-		case 'w': //Caso seja selecionada a primeira opção do menu
-			criarJogo(heroi, monstros, jogoAtual);
-			break;
-		case 's': //Caso seja selecionada a opção de baixo do menu
-			iniciarJogo(heroi, monstros, jogoAtual);
-			//iniciarJogo();
-			break;
+	while(1){
+		switch(pegarOpcaoMenu("templates/tela_inicial")){// De acordo com a opção que o menu retornar
+			case 'W': //Caso seja selecionada a primeira opção do menu
+				iniciarJogo(heroi, monstros, jogoAtual);
+				break;
+			case 'S': //Caso seja selecionada a opção de baixo do menu (GAME OPTIONS)
+				switch(pegarOpcaoMenu("templates/game_options")){
+					case 'W': // CONFIGURAÇÕES DOS MAPAS
+						switch(pegarOpcaoMenu("templates/map_options")){
+							case 'W': //SELECIONAR UM MAPA
+							break;
+							case 'S': //CRIAR UM MAPA
+							break;
+						};
+						break;
+					case 'S': // CONFIGURAÇÕES DE PERSONAGENS
+						switch(pegarOpcaoMenu("templates/characters_options")){
+							case 'W': //SELECIONAR UM MAPA
+							break;
+							case 'S': //CRIAR UM MAPA
+							break;
+						};
+				}
+				break;
+			case 'H':
+				exibirArquivo("templates/help");
+		};
 	}
 
 	return 0;
@@ -64,13 +86,24 @@ int main(int argc, char const *argv[]){
 	*	Esta retorna qual a opção escolhida pelo usuário no menu.
 	*
 ***/
-char pegarOpcaoMenu(){
-	char ultimo, opcao;
-	ultimo = 'w';
+char pegarOpcaoMenu(char *nomeArquivoDeMenu){
+	char ultimo='S', opcao='W';
 	do{
-		system("cls");
-		exibirMenu(&ultimo, &opcao);
-	}while((opcao = getch()) && opcao != 13);
+		if(ultimo != opcao && (opcao == 'W' || opcao == 'S')){// Só vai redezenhar se ele realmente alternar entre as posições...
+			system("cls");
+			exibirMenu(nomeArquivoDeMenu, &ultimo, &opcao);
+		}
+	}while((opcao = toupper(getch())) && opcao != 13 && opcao != 3);
+	// OPCAO == 3 CTRL +c
+	// OPCAO == 13 ENTER
+
+	//Casos especiais, após o fim do menu, para sair do jogo ou para voltar a tela principal.
+	if(opcao == 3 && (strcmp(nomeArquivoDeMenu,"templates/tela_inicial") == 0 || strcmp(nomeArquivoDeMenu, "templates/game_over") == 0)){ //Ctrl+C pressionado
+		printf("Jogo finalizado!\n");
+		exit(1);
+	}else if(opcao == 3){
+		return 0;//vai retornar um case inválido (diferente de w, e de s).. fará com que retorne para o menu principal.
+	}
 	return ultimo;
 }
 /***
@@ -79,29 +112,39 @@ char pegarOpcaoMenu(){
 	*   ela coloca '>' em cima ou em baixo do texto.
 	*
 ***/
-void exibirMenu(char *ultimo, char *opcao){
+void exibirMenu(char *nomeArquivoDeMenu, char *ultimo, char *opcao){
 	FILE *file;
-	char texto[20000];
-	file = fopen("tela_inicial", "r");
+	char texto[300], palavras[2][50];
+	int i;
+	file = fopen(nomeArquivoDeMenu, "r");
 	if(file == NULL){
 		#if _WIN32 //Se estiver em um sistema windows
 			printf("\a\a");/** Dois beep's para não encontrado, só funciona no windows. **/
 		#endif
-		printf("\n\tArquivo tela_inicial nao encontrado!\n");
+		printf("\n\tArquivo %s nao encontrado!\n", nomeArquivoDeMenu);
 		exit(1);
 	}else{
-		while(!feof(file)){
-			fgets(texto, 20000, (FILE*) file);
-			if(*opcao == 'w' || (*opcao != 's' && *ultimo == 'w')){
-				*ultimo = 'w';
-				alterarCaracterPrePalavra(texto, "Play", '>');
-				alterarCaracterPrePalavra(texto, "Create", ' ');
-			}else if(*opcao == 's' || (*opcao != 'w' && *ultimo == 'w')){
-				*ultimo = 's';
-				alterarCaracterPrePalavra(texto, "Play", ' ');
-				alterarCaracterPrePalavra(texto, "Create", '>');
+		for(i=0; (!feof(file)); i++){
+			if(i==0){
+				//ANTES DE TUDO, vai escanear apenas as duas primeiras palavras do Arquivo!!
+				// PALAVRA 0 E PALAVRA 1 serão as palavras que representam as opções disponiveis no menu.
+				fscanf((FILE*) file, " %s", palavras[0]);
+				fscanf((FILE*) file, " %s", palavras[1]);
+			}else{
+				// As próximas linhas de leitura
+				//Temos as duas primeiras palavras escaneadas, sabemos diretamente do menu quem deve ser a opção de cima e a opção de baixo.
+				fgets(texto, 300, (FILE*) file);
+				if(*opcao == 'W'){
+					*ultimo = 'W';
+					alterarCaracterPrePalavra(texto, palavras[0], '>');
+					alterarCaracterPrePalavra(texto, palavras[1], ' ');
+				}else if(*opcao == 'S'){
+					*ultimo = 'S';
+					alterarCaracterPrePalavra(texto, palavras[0], ' ');
+					alterarCaracterPrePalavra(texto, palavras[1], '>');
+				}
+				printf("%s", texto);
 			}
-			printf("%s\n", texto);
 		}
 	}
 	fclose(file);
@@ -114,10 +157,10 @@ void exibirMenu(char *ultimo, char *opcao){
 ***/
 void alterarCaracterPrePalavra(char *texto, char *busca, char c){
 	char *ptr, *aux;
-	aux = strstr(texto,busca);
+	aux = strstr(texto,busca); // Procura por uma palavra no texto e retorna o endereço da posição do caracter 0 desta palavra.
 	if(aux != NULL){
-		ptr = aux-2;
-		*ptr = c;
+		ptr = aux-2; // Volta 2 caracteres antes do caracter de inicio da palavra.
+		*ptr = c;// Substitui o conteúdo pelo caracter C que foi passado como parametro
 	}
 }
 /***
@@ -125,22 +168,32 @@ void alterarCaracterPrePalavra(char *texto, char *busca, char c){
 	*	Esta função irá iniciar um jogo novo.
 	*
 ***/
-void iniciarJogo(){
+void iniciarJogo(Personagem *heroi, Personagem *monstros, Jogo *atual){
 }
 /***
 	*
 	*	Esta função irá criar um novo jogo, ou seja, novos mapas e personagens
 	*
 ***/
-void criarJogo(){
+void criarJogo(Personagem *heroi, Personagem *monstros, Jogo *atual){
 }
 /***
 	*
 	* 	Essa função carrega o mapa do arquivo de texto.
 	*
 ***/
-void carregarMapaSalvoEmArquivo(Jogo *mapa){
-
+void carregarMapaSalvoEmArquivo(Jogo *jogo, char *nomeArquivoMapa){
+	FILE *file;
+	int i;
+	file = fopen(nomeArquivoMapa, "r");
+	if(file == NULL){
+		#if _WIN32 //Se estiver em um sistema windows
+			printf("\a\a");/** Dois beep's para não encontrado, só funciona no windows. **/
+		#endif
+		printf("\n\tArquivo mapa nao encontrado!\n");
+		exit(1);
+	}else{
+	}
 }
 /***
 	*
@@ -149,4 +202,27 @@ void carregarMapaSalvoEmArquivo(Jogo *mapa){
 ***/
 void carregarPersonagensSalvosEmArquivo(Personagem *heroi, Personagem *monstros){
 
+}
+/***
+	*
+	* 	Essa função carrega um arquivo de texto e exibe-o na tela.
+	*
+***/
+void exibirArquivo(char *nomeDoArquivo){
+	FILE *file;
+	file = fopen(nomeDoArquivo, "r");
+	if(file == NULL){
+		#if _WIN32 //Se estiver em um sistema windows
+				printf("\a\a");/** Dois beep's para não encontrado, só funciona no windows. **/
+				#endif
+		printf("\n\tArquivo %s nao encontrado!\n", nomeDoArquivo);
+		exit(1);
+	}else{
+			char texto[300];
+			while(!feof(file))){
+				fgets(texto, 300, (FILE*) file);
+				printf("%s", texto);
+			}
+	}
+	fclose(file);
 }
