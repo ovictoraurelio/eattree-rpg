@@ -6,8 +6,8 @@
 	* @autores
 	*   [
 	*	 	  Bruno Melo
-	* 		  Filipe Cumaru
-	*		  Rafael Santana - @arbs 
+	* 		Filipe Cumaru
+	*		  Rafael Santana
 	*		  Victor Aurélio
 	* 	]
 	*
@@ -34,6 +34,8 @@ typedef struct{
 typedef struct{
 	int tamanho; // Tamanho de  Linhas x Colunas (Nossa matriz será sempre quadrada)
 	char **mapa; // A matriz que representa o mapa
+	Personagem *heroi;
+	Personagem *monstros;
 }Jogo;
 
 /***
@@ -44,23 +46,29 @@ typedef struct{
 char pegarOpcaoMenu();
 void exibirMenu(char *arquivoDeMenu, char *ultimo, char *opcao);
 void exibirArquivo(char *nomeDoArquivo);
-void iniciarJogo(Personagem *heroi, Personagem *monstros, Jogo *atual);
-void carregarJogo(Personagem *heroi, Personagem *monstros, Jogo *atual);
-void criarJogo(Personagem *heroi, Personagem *monstros, Jogo *atual);
+void iniciarJogo(Jogo *atual);
+void carregarJogo(Jogo *atual);
+void criarJogo(Jogo *atual);
+void carregarPersonagensSalvos();
+int buscarNomeEmArquivo(char *busca, char *nomeArquivo);
 void alterarCaracterPrePalavra(char *texto, char *busca, char c);
 void carregarMapaSalvoEmArquivo(Jogo *jogo, char *nomeArquivoMapa);
-void carregarPersonagensSalvosEmArquivo(Personagem *heroi, Personagem *monstros);
+void carregarPersonagensSalvosEmArquivo(char *nomeDoArquivo, Jogo *jogo);
 void salvarMapaEmMapasSalvos(char *nomeDoMapa);
+void salvarPersonagemEmPersonagensSalvos(char *nomeDoPersonagem);
+void criarNovoPacoteDePersonagens(Jogo *jogo);
+void criarPacotePersonagens(char *nomePacotePersonagens, Personagem *heroi, Personagem *monstros);
 
 int main(int argc, char const *argv[]){
-	Personagem *heroi = (Personagem*) malloc(sizeof(Personagem));
-	Personagem *monstros = (Personagem*) malloc(sizeof(Personagem) * 4);
 	Jogo *jogoAtual = (Jogo*) malloc(sizeof(Jogo));
+	jogoAtual->heroi = (Personagem*) malloc(sizeof(Personagem));
+	jogoAtual->monstros = (Personagem*) malloc(sizeof(Personagem) * 4);
+
 
 	while(1){
 		switch(pegarOpcaoMenu("templates/tela_inicial")){// De acordo com a opção que o menu retornar
 			case 'W': //Caso seja selecionada a primeira opção do menu
-				iniciarJogo(heroi, monstros, jogoAtual);
+				iniciarJogo(jogoAtual);
 				break;
 			case 'S': //Caso seja selecionada a opção de baixo do menu (GAME OPTIONS)
 				switch(pegarOpcaoMenu("templates/game_options")){
@@ -80,9 +88,11 @@ int main(int argc, char const *argv[]){
 						break;
 					case 'S': // CONFIGURAÇÕES DE PERSONAGENS
 						switch(pegarOpcaoMenu("templates/characters_options")){
-							case 'W': //SELECIONAR UM MAPA
+							case 'W': //SELECIONAR UM PERSONAGEM
+								carregarPersonagensSalvos();
 							break;
-							case 'S': //CRIAR UM MAPA
+							case 'S': //CRIAR UM PERSONAGEM
+								criarNovoPacoteDePersonagens(jogoAtual);
 							break;
 						};
 				}
@@ -184,14 +194,14 @@ void alterarCaracterPrePalavra(char *texto, char *busca, char c){
 	*	Esta função irá iniciar um jogo novo.
 	*
 ***/
-void iniciarJogo(Personagem *heroi, Personagem *monstros, Jogo *atual){
+void iniciarJogo(Jogo *atual){
 }
 /***
 	*
 	*	Esta função irá criar um novo jogo, ou seja, novos mapas e personagens
 	*
 ***/
-void criarJogo(Personagem *heroi, Personagem *monstros, Jogo *atual){
+void criarJogo(Jogo *atual){
 }
 /***
 	*
@@ -273,13 +283,136 @@ void carregarMapaSalvoEmArquivo(Jogo *jogo, char *nomeArquivoMapa){
 }
 /***
 	*
+	* 	Essa função gerencia a criação de um novo pacote de personagens
+	*
+***/
+void criarNovoPacoteDePersonagens(Jogo *jogo){
+		int i;
+		char nomePacotePersonagens[50];
+		system("CLS");
+		printf("Bem vindo a criacao de um novo pacote de personagens!!\n");
+		printf("Digite o nome do pacote de personagens(ate 50 caracteres, sem espacos): \n");
+		scanf(" %50s", &nomePacotePersonagens);
+		while(buscarNomeEmArquivo(nomePacotePersonagens, "personagens.txt") > 0){
+			printf("Ja existe um pacote de personagens com este nome, por favor, digite outro: \n");
+			scanf(" %50s", &nomePacotePersonagens);
+		}
+		printf("Digite o nome do heroi\n");
+		scanf(" %[^\n]",jogo->heroi->nome);
+		printf("Digite a quantidade de vida que o heroi possui: \n");
+		scanf("%d", &jogo->heroi->vida);
+		printf("Digite a quantidade de ataque que o heroi possui: \n");
+		scanf("%d", &jogo->heroi->ataque);
+		printf("Digite a quantidade de defesa que o heroi possui: \n");
+		scanf("%d", &jogo->heroi->defesa);
+		for(i=0; i<4; i++){
+			printf("Digite o nome do monstro %d\n", i+1);
+			scanf(" %[^\n]",jogo->monstros[i].nome);
+			printf("Digite a quantidade de vida que o heroi possui: \n");
+			scanf("%d", &jogo->monstros[i].vida);
+			printf("Digite a quantidade de ataque que o heroi possui: \n");
+			scanf("%d", &jogo->monstros[i].ataque);
+			printf("Digite a quantidade de defesa que o heroi possui: \n");
+			scanf("%d", &jogo->monstros[i].defesa);
+		}
+		salvarPersonagemEmPersonagensSalvos(nomePacotePersonagens);
+		criarPacotePersonagens(nomePacotePersonagens, jogo->heroi, jogo->monstros);
+}
+/***
+	*
+	* 	Essa função salva o nome do pacote de personagens em personagens salvos.
+	*
+***/
+void salvarPersonagemEmPersonagensSalvos(char *nomeDoPersonagem){
+	FILE *file = fopen("personagens.txt", "a");
+	if(file == NULL){
+		printf("\n\tArquivo de personagens nao encontrado!\n");
+		exit(1);
+	}else{
+		fprintf((FILE*) file, "\n");
+		fputs(nomeDoPersonagem, (FILE*) file);
+	}
+	fclose(file);
+}
+/***
+	*
+	* 	Essa função salva o nome do pacote de personagens em personagens salvos.
+	*
+***/
+void criarPacotePersonagens(char *nomePacotePersonagens, Personagem *heroi, Personagem *monstros){
+		char aux[64];
+		int i;
+		strcpy(aux, "personagens/");
+		strcat(aux, nomePacotePersonagens);
+		strcat(aux, ".bin");
+		FILE *file = fopen(aux, "wb");
+		if(file == NULL){
+				printf("\n\tNão foi possível criar um pacote de personagens!\n");
+				exit(1);
+		}else{
+				fwrite(heroi, sizeof(Personagem), 1, file);
+				for(i=0; i<4; i++)
+						fwrite(&monstros[i], sizeof(Personagem), 1, file);
+		}
+		fclose(file);
+}
+/***
+	*
 	* 	Essa função carrega os personagens do arquivo binário.
 	*
 ***/
-void carregarPersonagensSalvosEmArquivo(Personagem *heroi, Personagem *monstros){
+void carregarPersonagensSalvos(){
+	int i,personagemSelecionado;
+	char texto[50];
+	FILE *file = fopen("personagens.txt", "r");
+	if(file == NULL){
+		printf("\n\tArquivo de personagens nao encontrado!\n");
+		exit(1);
+	}else{
+		system("CLS");
+		printf("\n\nPersonagens encontrados na base de dados:\nCod:\tNome:\n");
+		for(i=0; (!feof(file)); i++){
+			fgets(texto, 50, (FILE*) file);
+			printf("%d\t %s", i+1,texto);
+		}
+		printf("\nPressione o codigo do pacote de personagens que deseja usar: ");
+		scanf("%d", &personagemSelecionado);
+	}
+}
+/***
+	*
+	* 	Essa função carrega os personagens do arquivo binário.
+	*
+***/
+void carregarPersonagensSalvosEmArquivo(char *nomeDoArquivo, Jogo *jogo){
 	FILE *file = fopen("binario.bin", "rb");
-	fread(heroi, sizeof(Personagem), 1, file);
-	printf("%s\n", heroi->nome);
+	fread(jogo->heroi, sizeof(Personagem), 1, file);
+	int i;
+	for(i=0; i<4; i++){
+		fread(&jogo->monstros[i], sizeof(Personagem), 1, file);
+	}
+	printf("%s\n", jogo->heroi->nome);
+	fclose(file);
+}
+/***
+	*
+	* 	Essa função pesquisa por um nome de até 50 caracteres em algum arquivo que armazene strings de até 50 caracteres, linha por linha..
+	*
+***/
+int buscarNomeEmArquivo(char *busca, char *nomeArquivo){
+	FILE *file = fopen(nomeArquivo, "r");
+	if(file == NULL){
+			printf("\n\nTentando buscar a palavra %s no arquivo %s mas o arquivo não foi encontrado!\n", busca, nomeArquivo);
+	}else{
+			char texto[50];
+			while(!feof(file)){
+					fgets(texto,50, (FILE*) file);
+					if(strcmp(texto, busca) == 0){
+							return 1;
+					}
+			}
+	}
+	return 0;
 }
 /***
 	*
