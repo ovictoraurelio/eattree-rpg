@@ -1,14 +1,14 @@
 /***
 	*
 	*	--- RPG IP 2016 ---
-	* @descricao main.c √© o arquivo principal do jogo, onde toda a m√°gica acontece!
+	* @descricao main.c È o arquivo principal do jogo, onde toda a m·gica acontece!
 	* @desde 06/06/2016
 	* @autores
 	*   [
 	*	 	  Bruno Melo
 	* 		  Filipe Cumaru
-	*		  Rafael Santana - @arbs 
-	*		  Victor Aur√©lio
+	*		  Rafael Santana - @arbs
+	*		  Victor AurÈlio
 	* 	]
 	*
 	*
@@ -27,18 +27,18 @@
 typedef struct{
 	char representacao;// A letra que vai representar o personagem no mapa
 	char nome[20]; //O Nome do personagem
-	int ataque, defesa, vida;// Vari√°veis que representam quanto de ataque, defesa ou vida o personagem possui
+	int ataque, defesa, vida;// Vari·veis que representam quanto de ataque, defesa ou vida o personagem possui
 	int x, y;// Coordenadas X e Y do personagem no mapa
 }Personagem;
 
 typedef struct{
-	int tamanho; // Tamanho de  Linhas x Colunas (Nossa matriz ser√° sempre quadrada)
+	int tamanho; // Tamanho de  Linhas x Colunas (Nossa matriz ser· sempre quadrada)
 	char **mapa; // A matriz que representa o mapa
 }Jogo;
 
 /***
 	*
-	*	Declarando cabe√ßalhos das fun√ß√µes
+	*	Declarando cabeÁalhos das funÁıes
 	*
 ***/
 char pegarOpcaoMenu();
@@ -51,7 +51,6 @@ void alterarCaracterPrePalavra(char *texto, char *busca, char c);
 void carregarMapaSalvoEmArquivo(Jogo *jogo, char *nomeArquivoMapa);
 void carregarPersonagensSalvosEmArquivo(Personagem *heroi, Personagem *monstros);
 void salvarMapaEmMapasSalvos(char *nomeDoMapa);
-void draw_map (char* arquivo, int x);
 
 int main(int argc, char const *argv[]){
 	Personagem *heroi = (Personagem*) malloc(sizeof(Personagem));
@@ -59,16 +58,16 @@ int main(int argc, char const *argv[]){
 	Jogo *jogoAtual = (Jogo*) malloc(sizeof(Jogo));
 
 	while(1){
-		switch(pegarOpcaoMenu("templates/tela_inicial")){// De acordo com a op√ß√£o que o menu retornar
-			case 'W': //Caso seja selecionada a primeira op√ß√£o do menu
+		switch(pegarOpcaoMenu("templates/tela_inicial")){// De acordo com a opÁ„o que o menu retornar
+			case 'W': //Caso seja selecionada a primeira opÁ„o do menu
 				iniciarJogo(heroi, monstros, jogoAtual);
 				break;
-			case 'S': //Caso seja selecionada a op√ß√£o de baixo do menu (GAME OPTIONS)
+			case 'S': //Caso seja selecionada a opÁ„o de baixo do menu (GAME OPTIONS)
 				switch(pegarOpcaoMenu("templates/game_options")){
-					case 'W': // CONFIGURA√á√ïES DOS MAPAS
+					case 'W': // CONFIGURA«’ES DOS MAPAS
 						switch(pegarOpcaoMenu("templates/map_options")){
 							case 'W': //SELECIONAR UM MAPA
-								draw_map("mapas.txt",carregarMapasSalvos());
+								carregarMapasSalvos();
 							break;
 							case 'S': //CRIAR UM MAPA
 								system("cls");
@@ -79,7 +78,7 @@ int main(int argc, char const *argv[]){
 							break;
 						};
 						break;
-					case 'S': // CONFIGURA√á√ïES DE PERSONAGENS
+					case 'S': // CONFIGURA«’ES DE PERSONAGENS
 						switch(pegarOpcaoMenu("templates/characters_options")){
 							case 'W': //SELECIONAR UM MAPA
 							break;
@@ -95,18 +94,17 @@ int main(int argc, char const *argv[]){
 				system("pause");
 		};
 	}
-	exibirArquivo("templates/texto_final");
 	return 0;
 }
 /***
 	*
-	*	Esta retorna qual a op√ß√£o escolhida pelo usu√°rio no menu.
+	*	Esta retorna qual a opÁ„o escolhida pelo usu·rio no menu.
 	*
 ***/
 char pegarOpcaoMenu(char *nomeArquivoDeMenu){
 	char ultimo='S', opcao='W';
 	do{
-		if(ultimo != opcao && (opcao == 'W' || opcao == 'S')){// S√≥ vai redezenhar se ele realmente alternar entre as posi√ß√µes...
+		if(ultimo != opcao && (opcao == 'W' || opcao == 'S')){// SÛ vai redezenhar se ele realmente alternar entre as posiÁıes...
 			system("CLS");
 			exibirMenu(nomeArquivoDeMenu, &ultimo, &opcao);
 		}
@@ -114,12 +112,12 @@ char pegarOpcaoMenu(char *nomeArquivoDeMenu){
 	// OPCAO == 3 CTRL +c
 	// OPCAO == 13 ENTER
 
-	//Casos especiais, ap√≥s o fim do menu, para sair do jogo ou para voltar a tela principal.
+	//Casos especiais, apÛs o fim do menu, para sair do jogo ou para voltar a tela principal.
 	if(opcao == 3 && (strcmp(nomeArquivoDeMenu,"templates/tela_inicial") == 0 || strcmp(nomeArquivoDeMenu, "templates/game_over") == 0)){ //Ctrl+C pressionado
 		printf("Jogo finalizado!\n");
 		exit(1);
 	}else if(opcao == 3){
-		return 0;//vai retornar um case inv√°lido (diferente de w, e de s).. far√° com que retorne para o menu principal.
+		return 0;//vai retornar um case inv·lido (diferente de w, e de s).. far· com que retorne para o menu principal.
 	}else if(opcao == 'H'){
 		ultimo = 'H';
 	}
@@ -127,7 +125,7 @@ char pegarOpcaoMenu(char *nomeArquivoDeMenu){
 }
 /***
 	*
-	*	Esta fun√ß√£o exibe o menu e de acordo com a atual posi√ß√£o do cursor
+	*	Esta funÁ„o exibe o menu e de acordo com a atual posiÁ„o do cursor
 	*   ela coloca '>' em cima ou em baixo do texto.
 	*
 ***/
@@ -137,7 +135,7 @@ void exibirMenu(char *nomeArquivoDeMenu, char *ultimo, char *opcao){
 	FILE *file = fopen(nomeArquivoDeMenu, "r");
 	if(file == NULL){
 		#if _WIN32 //Se estiver em um sistema windows
-			printf("\a\a");/** Dois beep's para n√£o encontrado, s√≥ funciona no windows. **/
+			printf("\a\a");/** Dois beep's para n„o encontrado, sÛ funciona no windows. **/
 		#endif
 		printf("\n\tArquivo %s nao encontrado!\n", nomeArquivoDeMenu);
 		exit(1);
@@ -145,12 +143,12 @@ void exibirMenu(char *nomeArquivoDeMenu, char *ultimo, char *opcao){
 		for(i=0; (!feof(file)); i++){
 			if(i==0){
 				//ANTES DE TUDO, vai escanear apenas as duas primeiras palavras do Arquivo!!
-				// PALAVRA 0 E PALAVRA 1 ser√£o as palavras que representam as op√ß√µes disponiveis no menu.
+				// PALAVRA 0 E PALAVRA 1 ser„o as palavras que representam as opÁıes disponiveis no menu.
 				fscanf((FILE*) file, " %s", palavras[0]);
 				fscanf((FILE*) file, " %s", palavras[1]);
 			}else{
-				// As pr√≥ximas linhas de leitura
-				//Temos as duas primeiras palavras escaneadas, sabemos diretamente do menu quem deve ser a op√ß√£o de cima e a op√ß√£o de baixo.
+				// As prÛximas linhas de leitura
+				//Temos as duas primeiras palavras escaneadas, sabemos diretamente do menu quem deve ser a opÁ„o de cima e a opÁ„o de baixo.
 				fgets(texto, 300, (FILE*) file);
 				if(*opcao == 'W'){
 					*ultimo = 'W';
@@ -169,35 +167,35 @@ void exibirMenu(char *nomeArquivoDeMenu, char *ultimo, char *opcao){
 }
 /***
 	*
-	*	Esta fun√ß√£o recebe um texto como parametro,
-	* 	busca uma determinada palavra e coloca um caracter duas posi√ß√µes antes da palavra.
+	*	Esta funÁ„o recebe um texto como parametro,
+	* 	busca uma determinada palavra e coloca um caracter duas posiÁıes antes da palavra.
 	*
 ***/
 void alterarCaracterPrePalavra(char *texto, char *busca, char c){
 	char *ptr, *aux;
-	aux = strstr(texto,busca); // Procura por uma palavra no texto e retorna o endere√ßo da posi√ß√£o do caracter 0 desta palavra.
+	aux = strstr(texto,busca); // Procura por uma palavra no texto e retorna o endereÁo da posiÁ„o do caracter 0 desta palavra.
 	if(aux != NULL){
 		ptr = aux-2; // Volta 2 caracteres antes do caracter de inicio da palavra.
-		*ptr = c;// Substitui o conte√∫do pelo caracter C que foi passado como parametro
+		*ptr = c;// Substitui o conte˙do pelo caracter C que foi passado como parametro
 	}
 }
 /***
 	*
-	*	Esta fun√ß√£o ir√° iniciar um jogo novo.
+	*	Esta funÁ„o ir· iniciar um jogo novo.
 	*
 ***/
 void iniciarJogo(Personagem *heroi, Personagem *monstros, Jogo *atual){
 }
 /***
 	*
-	*	Esta fun√ß√£o ir√° criar um novo jogo, ou seja, novos mapas e personagens
+	*	Esta funÁ„o ir· criar um novo jogo, ou seja, novos mapas e personagens
 	*
 ***/
 void criarJogo(Personagem *heroi, Personagem *monstros, Jogo *atual){
 }
 /***
 	*
-	* 	Essa fun√ß√£o carrega os mapas salvos. Apartir do arquivo mapas.txt
+	* 	Essa funÁ„o carrega os mapas salvos. Apartir do arquivo mapas.txt
 	*
 ***/
 int carregarMapasSalvos(){
@@ -206,7 +204,7 @@ int carregarMapasSalvos(){
 	FILE *file = fopen("mapas.txt", "r");
 	if(file == NULL){
 		#if _WIN32 //Se estiver em um sistema windows
-			printf("\a\a");/** Dois beep's para n√£o encontrado, s√≥ funciona no windows. **/
+			printf("\a\a");/** Dois beep's para n„o encontrado, sÛ funciona no windows. **/
 		#endif
 		printf("\n\tArquivo de mapas nao encontrado!\n");
 		exit(1);
@@ -224,27 +222,29 @@ int carregarMapasSalvos(){
 }
 /***
 	*
-	* 	Essa fun√ß√£o carrega os mapas salvos. Apartir do arquivo mapas.txt
+	* 	Essa funÁ„o carrega os mapas salvos. Apartir do arquivo mapas.txt
 	*
 ***/
 void salvarMapaEmMapasSalvos(char *nomeDoMapa){
 	FILE *file = fopen("mapas.txt", "a");
 	if(file == NULL){
 		#if _WIN32 //Se estiver em um sistema windows
-			printf("\a\a");/** Dois beep's para n√£o encontrado, s√≥ funciona no windows. **/
+			printf("\a\a");/** Dois beep's para n„o encontrado, sÛ funciona no windows. **/
 		#endif
 		printf("\n\tArquivo de mapas nao encontrado!\n");
 		exit(1);
 	}else{
 		system("CLS");
-		fprintf((FILE*) file,"\n");
+		//fputs("\n", (FILE*) file);
+		fseek (file , 0 , SEEK_END);
+		fputs("\n",(FILE*) file);
 		fputs(nomeDoMapa, (FILE*) file);
 	}
 	fclose(file);
 }
 /***
 	*
-	* 	Essa fun√ß√£o carrega o mapa do arquivo de texto.
+	* 	Essa funÁ„o carrega o mapa do arquivo de texto.
 	*
 ***/
 void carregarMapaSalvoEmArquivo(Jogo *jogo, char *nomeArquivoMapa){
@@ -253,7 +253,7 @@ void carregarMapaSalvoEmArquivo(Jogo *jogo, char *nomeArquivoMapa){
 	FILE *file = fopen(nomeArquivoMapa, "r");
 	if(file == NULL){
 		#if _WIN32 //Se estiver em um sistema windows
-			printf("\a\a");/** Dois beep's para n√£o encontrado, s√≥ funciona no windows. **/
+			printf("\a\a");/** Dois beep's para n„o encontrado, sÛ funciona no windows. **/
 		#endif
 		printf("\n\tArquivo mapa nao encontrado!\n");
 		exit(1);
@@ -261,21 +261,23 @@ void carregarMapaSalvoEmArquivo(Jogo *jogo, char *nomeArquivoMapa){
 		fscanf((FILE*) file, "%d", &nLinhas);
 		//printf("Numero de linhas: %d\n", nLinhas);
 		jogo->mapa = (char**) malloc(sizeof(char*) * nLinhas);
-		//para ignoranr o \n que vem ap√≥s o n√∫mero..
+		//para ignoranr o \n que vem apÛs o n˙mero..
 		jogo->mapa[0] = (char*) malloc(sizeof(char) * 300);
 		fgets(jogo->mapa[0], 300, (FILE*) file);
 		for(i=0; i<nLinhas; i++){
 			jogo->mapa[i] = (char*) malloc(sizeof(char) * 300);
 			fgets(jogo->mapa[i], 300, (FILE*) file);
 		}
+		/*for(i=0; i<nLinhas; i++){
+			printf("| %s",jogo->mapa[i]);
+		}*/
 	}
 }
 /***
 	*
-	* 	Essa fun√ß√£o carrega os personagens do arquivo bin√°rio.
+	* 	Essa funÁ„o carrega os personagens do arquivo bin·rio.
 	*
 ***/
-
 void carregarPersonagensSalvosEmArquivo(Personagem *heroi, Personagem *monstros){
 	FILE *file = fopen("binario.bin", "rb");
 	fread(heroi, sizeof(Personagem), 1, file);
@@ -283,7 +285,7 @@ void carregarPersonagensSalvosEmArquivo(Personagem *heroi, Personagem *monstros)
 }
 /***
 	*
-	* 	Essa fun√ß√£o carrega um arquivo de texto e exibe-o na tela.
+	* 	Essa funÁ„o carrega um arquivo de texto e exibe-o na tela.
 	*
 ***/
 void exibirArquivo(char *nomeDoArquivo){
@@ -291,7 +293,7 @@ void exibirArquivo(char *nomeDoArquivo){
 	file = fopen(nomeDoArquivo, "r");
 	if(file == NULL){
 		#if _WIN32 //Se estiver em um sistema windows
-				printf("\a\a");/** Dois beep's para n√£o encontrado, s√≥ funciona no windows. **/
+				printf("\a\a");/** Dois beep's para n„o encontrado, sÛ funciona no windows. **/
 				#endif
 		printf("\n\tArquivo %s nao encontrado!\n", nomeDoArquivo);
 		exit(1);
@@ -304,63 +306,27 @@ void exibirArquivo(char *nomeDoArquivo){
 	}
 	fclose(file);
 }
-
-void draw_map (char* arquivo, int x)
-{
-
-	char** matriz;
-	int dim = 0, i = 0, j = 0,num;
-	char name[100];
-	char aux[100]={'m','a','p','a','s','/','\0'},aux2[5]={'.','t','x','t','\0'};
-	FILE* arq;
-	arq = fopen("mapas.txt","r");
-	for (i = 0; i <= x; ++i)
-	{
-		fgets(name,100,arq);
-	}
-	fclose(arq);
-	for (i = 0; name[i] !='\n'; ++i);
-	name[i]='\0';
-	strcat(name,aux2);
-	strcat(aux,name);
-	//printf("%s",aux);
-	printf("Digite n na forma que (((n*4)+5) vai ser o tamanho real do mapa):");
-	scanf("%d", &num);
-	dim = (4*num)+5;
-	printf("Digite o mapa  %d x %d:\n",dim,dim);
-	matriz = (char**) malloc(dim*sizeof(char*));
-	if (matriz == NULL) {
-		exit (1);
-	}
-	for (i = 0; i <= dim; i++) {
-		matriz[i] = (char*) malloc((dim+1)*sizeof(char));
-		if (matriz[i] == NULL) {
-			exit (1);
+/***
+		*
+		*
+		*
+***/
+int numeroDeLinhasArquivoTexto(char *nomeArquivo){
+	FILE *file = fopen(nomeArquivo, "r");
+	if(file == NULL){
+		#if _WIN32 //Se estiver em um sistema windows
+			printf("\a\a");/** Dois beep's para n„o encontrado, sÛ funciona no windows. **/
+		#endif
+		printf("\n\tArquivo de mapas nao encontrado!\n");
+		exit(1);
+	}else{
+		system("CLS");
+		int i=0;
+		char texto[300];
+		for(i=0; (!feof(file)); i++){
+			fgets(texto, 300, (FILE*) file);
 		}
+		return i;
 	}
-	for (i = 0; i < dim; i++)
-		for (j = 0; j < dim+1; j++)
-			scanf("%c", &matriz[i][j]);
-	arq = fopen(aux,"w");
-	for (i = 0; i < dim; ++i)
-	{
-		for (j = 0; j < dim; ++j)
-		{
-			if(i!=0 && i!= dim-1 && (j==0 || j==dim-1))matriz[i][j]='|';
-			if(i==0 && j==0)matriz[i][j]='/';
-			else if(i==0 && j==dim-1)matriz[i][j]='\\';
-			else if(i==0)matriz[i][j]='-';
-			if(i==dim-1 && j==0)matriz[i][j]='\\';
-			else if(i==dim-1 && j==dim-1)matriz[i][j]='/';
-			else if (i==dim-1)matriz[i][j]='-';
-		}
-	}
-	fprintf(arq, "%d\n", dim);
-	for (i = 0; i < dim; i++) {
-		for (j = 0; j < dim; j++){
-			fprintf(arq, "%c", matriz[i][j]);
-		}
-		fprintf(arq,"\n");
-	}
-	fclose(arq);
+	return -1;
 }
