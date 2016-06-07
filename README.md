@@ -22,7 +22,7 @@ _modelo/ Pasta com alguns arquivos enviados pelos monitores.
 ```
 
 
-[Bruno Melo]: <cin.ufpe.br/~bmc3>
-[Filipe Cumaru]: <cin.ufpe.br/~facsa>
-[Rafael Santana]: <cin.ufpe.br/~arbs>
-[Victor Aurélio ]: <cin.ufpe.br/~vags>
+[Bruno Melo]: <http://cin.ufpe.br/~bmc3>
+[Filipe Cumaru]: <http://cin.ufpe.br/~facsa>
+[Rafael Santana]: <http://cin.ufpe.br/~arbs>
+[Victor Aurélio]: <http://cin.ufpe.br/~vags>
