@@ -6,8 +6,8 @@
 	* @autores
 	*   [
 	*	 	  Bruno Melo
-	* 		Filipe Cumaru
-	*		  Rafael Santana
+	* 		  Filipe Cumaru
+	*		  Rafael Santana - @arbs 
 	*		  Victor Aurélio
 	* 	]
 	*
