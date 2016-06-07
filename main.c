@@ -50,14 +50,14 @@ void criarJogo(Personagem *heroi, Personagem *monstros, Jogo *atual);
 void alterarCaracterPrePalavra(char *texto, char *busca, char c);
 void carregarMapaSalvoEmArquivo(Jogo *jogo, char *nomeArquivoMapa);
 void carregarPersonagensSalvosEmArquivo(Personagem *heroi, Personagem *monstros);
+void salvarMapaEmMapasSalvos(char *nomeDoMapa);
 
 int main(int argc, char const *argv[]){
-	/*Personagem heroi, monstros[4];*/Personagem *heroi = (Personagem*) malloc(sizeof(Personagem)), *monstros = (Personagem*) malloc(sizeof(Personagem) * 4);
-	/*Jogo jogoAtual;*/Jogo *jogoAtual = (Jogo*) malloc(sizeof(Jogo));
+	Personagem *heroi = (Personagem*) malloc(sizeof(Personagem));
+	Personagem *monstros = (Personagem*) malloc(sizeof(Personagem) * 4);
+	Jogo *jogoAtual = (Jogo*) malloc(sizeof(Jogo));
 
-	//carregarMapaSalvoEmArquivo(jogoAtual, "mapas/default.txt");
-	carregarPersonagensSalvosEmArquivo(heroi, monstros);
-	/**while(1){
+	while(1){
 		switch(pegarOpcaoMenu("templates/tela_inicial")){// De acordo com a opção que o menu retornar
 			case 'W': //Caso seja selecionada a primeira opção do menu
 				iniciarJogo(heroi, monstros, jogoAtual);
@@ -67,8 +67,14 @@ int main(int argc, char const *argv[]){
 					case 'W': // CONFIGURAÇÕES DOS MAPAS
 						switch(pegarOpcaoMenu("templates/map_options")){
 							case 'W': //SELECIONAR UM MAPA
+								carregarMapasSalvos();
 							break;
 							case 'S': //CRIAR UM MAPA
+								system("cls");
+								char nome[200];
+								printf("digite o nome do mapa: ");
+								gets(nome);
+								salvarMapaEmMapasSalvos(nome);
 							break;
 						};
 						break;
@@ -83,12 +89,11 @@ int main(int argc, char const *argv[]){
 				break;
 			case 'H':
 				system("CLS");
-				system("color e0");
+				system("color 0e");
 				exibirArquivo("templates/help");
 				system("pause");
 		};
 	}
-**/
 	return 0;
 }
 /***
@@ -190,6 +195,53 @@ void criarJogo(Personagem *heroi, Personagem *monstros, Jogo *atual){
 }
 /***
 	*
+	* 	Essa função carrega os mapas salvos. Apartir do arquivo mapas.txt
+	*
+***/
+int carregarMapasSalvos(){
+	int i,mapaSelecionado;
+	char texto[300];
+	FILE *file = fopen("mapas.txt", "r");
+	if(file == NULL){
+		#if _WIN32 //Se estiver em um sistema windows
+			printf("\a\a");/** Dois beep's para não encontrado, só funciona no windows. **/
+		#endif
+		printf("\n\tArquivo de mapas nao encontrado!\n");
+		exit(1);
+	}else{
+		system("CLS");
+		printf("\n\nMapas encontrados na base de dados:\nCod:\tNome:\n");
+		for(i=0; (!feof(file)); i++){
+			fgets(texto, 300, (FILE*) file);
+			printf("%d\t %s", i+1,texto);
+		}
+		printf("\nPressione o codigo do mapa que deseja usar: ");
+		scanf("%d", &mapaSelecionado);
+		return mapaSelecionado-1;
+	}
+}
+/***
+	*
+	* 	Essa função carrega os mapas salvos. Apartir do arquivo mapas.txt
+	*
+***/
+void salvarMapaEmMapasSalvos(char *nomeDoMapa){
+	FILE *file = fopen("mapas.txt", "a");
+	if(file == NULL){
+		#if _WIN32 //Se estiver em um sistema windows
+			printf("\a\a");/** Dois beep's para não encontrado, só funciona no windows. **/
+		#endif
+		printf("\n\tArquivo de mapas nao encontrado!\n");
+		exit(1);
+	}else{
+		system("CLS");
+		//fputs("\n", (FILE*) file);
+		fputs(nomeDoMapa, (FILE*) file);
+	}
+	fclose(file);
+}
+/***
+	*
 	* 	Essa função carrega o mapa do arquivo de texto.
 	*
 ***/
@@ -251,4 +303,28 @@ void exibirArquivo(char *nomeDoArquivo){
 			}
 	}
 	fclose(file);
+}
+/***
+		*
+		*
+		*
+***/
+int numeroDeLinhasArquivoTexto(char *nomeArquivo){
+	FILE *file = fopen(nomeArquivo, "r");
+	if(file == NULL){
+		#if _WIN32 //Se estiver em um sistema windows
+			printf("\a\a");/** Dois beep's para não encontrado, só funciona no windows. **/
+		#endif
+		printf("\n\tArquivo de mapas nao encontrado!\n");
+		exit(1);
+	}else{
+		system("CLS");
+		int i=0;
+		char texto[300];
+		for(i=0; (!feof(file)); i++){
+			fgets(texto, 300, (FILE*) file);
+		}
+		return i;
+	}
+	return -1;
 }
