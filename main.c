@@ -51,7 +51,7 @@ void alterarCaracterPrePalavra(char *texto, char *busca, char c);
 void carregarMapaSalvoEmArquivo(Jogo *jogo, char *nomeArquivoMapa);
 void carregarPersonagensSalvosEmArquivo(Personagem *heroi, Personagem *monstros);
 void salvarMapaEmMapasSalvos(char *nomeDoMapa);
-void draw_map (char* arquivo, int x);
+void draw_map (char* name);
 
 int main(int argc, char const *argv[]){
 	Personagem *heroi = (Personagem*) malloc(sizeof(Personagem));
@@ -68,13 +68,13 @@ int main(int argc, char const *argv[]){
 					case 'W': // CONFIGURAÇÕES DOS MAPAS
 						switch(pegarOpcaoMenu("templates/map_options")){
 							case 'W': //SELECIONAR UM MAPA
-								draw_map("mapas.txt",carregarMapasSalvos());
 							break;
 							case 'S': //CRIAR UM MAPA
 								system("cls");
 								char nome[200];
 								printf("digite o nome do mapa: ");
 								gets(nome);
+								draw_map(nome);
 								salvarMapaEmMapasSalvos(nome);
 							break;
 						};
@@ -305,22 +305,14 @@ void exibirArquivo(char *nomeDoArquivo){
 	fclose(file);
 }
 
-void draw_map (char* arquivo, int x)
+void draw_map (char* name)
 {
-
 	char** matriz;
 	int dim = 0, i = 0, j = 0,num;
-	char name[100];
 	char aux[100]={'m','a','p','a','s','/','\0'},aux2[5]={'.','t','x','t','\0'};
 	FILE* arq;
-	arq = fopen("mapas.txt","r");
-	for (i = 0; i <= x; ++i)
-	{
-		fgets(name,100,arq);
-	}
-	fclose(arq);
-	for (i = 0; name[i] !='\n'; ++i);
-	name[i]='\0';
+	//for (i = 0; name[i] !='\n'; ++i);
+	//name[i]='\0';
 	strcat(name,aux2);
 	strcat(aux,name);
 	//printf("%s",aux);
