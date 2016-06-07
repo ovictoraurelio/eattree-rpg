@@ -19,6 +19,11 @@
 #include <string.h>
 #include <time.h>
 
+#define CLS cls;
+#if UNIX //Se estiver em um sistema linux
+	#define CLS clear
+#endif
+
 typedef struct{
 	char representacao;// A letra que vai representar o personagem no mapa
 	char nome[20]; //O Nome do personagem
@@ -47,10 +52,12 @@ void carregarMapaSalvoEmArquivo(Jogo *jogo, char *nomeArquivoMapa);
 void carregarPersonagensSalvosEmArquivo(Personagem *heroi, Personagem *monstros);
 
 int main(int argc, char const *argv[]){
-	Personagem *heroi, *monstros;
-	Jogo *jogoAtual;
+	/*Personagem heroi, monstros[4];*/Personagem *heroi = (Personagem*) malloc(sizeof(Personagem)), *monstros = (Personagem*) malloc(sizeof(Personagem) * 4);
+	/*Jogo jogoAtual;*/Jogo *jogoAtual = (Jogo*) malloc(sizeof(Jogo));
 
-	while(1){
+	//carregarMapaSalvoEmArquivo(jogoAtual, "mapas/default.txt");
+	carregarPersonagensSalvosEmArquivo(heroi, monstros);
+	/**while(1){
 		switch(pegarOpcaoMenu("templates/tela_inicial")){// De acordo com a opção que o menu retornar
 			case 'W': //Caso seja selecionada a primeira opção do menu
 				iniciarJogo(heroi, monstros, jogoAtual);
@@ -75,10 +82,13 @@ int main(int argc, char const *argv[]){
 				}
 				break;
 			case 'H':
+				system("CLS");
+				system("color e0");
 				exibirArquivo("templates/help");
+				system("pause");
 		};
 	}
-
+**/
 	return 0;
 }
 /***
@@ -90,10 +100,10 @@ char pegarOpcaoMenu(char *nomeArquivoDeMenu){
 	char ultimo='S', opcao='W';
 	do{
 		if(ultimo != opcao && (opcao == 'W' || opcao == 'S')){// Só vai redezenhar se ele realmente alternar entre as posições...
-			system("cls");
+			system("CLS");
 			exibirMenu(nomeArquivoDeMenu, &ultimo, &opcao);
 		}
-	}while((opcao = toupper(getch())) && opcao != 13 && opcao != 3);
+	}while((opcao = toupper(getch())) && opcao != 13 && opcao != 3 && opcao != 'H');
 	// OPCAO == 3 CTRL +c
 	// OPCAO == 13 ENTER
 
@@ -103,6 +113,8 @@ char pegarOpcaoMenu(char *nomeArquivoDeMenu){
 		exit(1);
 	}else if(opcao == 3){
 		return 0;//vai retornar um case inválido (diferente de w, e de s).. fará com que retorne para o menu principal.
+	}else if(opcao == 'H'){
+		ultimo = 'H';
 	}
 	return ultimo;
 }
@@ -113,10 +125,9 @@ char pegarOpcaoMenu(char *nomeArquivoDeMenu){
 	*
 ***/
 void exibirMenu(char *nomeArquivoDeMenu, char *ultimo, char *opcao){
-	FILE *file;
-	char texto[300], palavras[2][50];
 	int i;
-	file = fopen(nomeArquivoDeMenu, "r");
+	char texto[300], palavras[2][50];
+	FILE *file = fopen(nomeArquivoDeMenu, "r");
 	if(file == NULL){
 		#if _WIN32 //Se estiver em um sistema windows
 			printf("\a\a");/** Dois beep's para não encontrado, só funciona no windows. **/
@@ -183,9 +194,9 @@ void criarJogo(Personagem *heroi, Personagem *monstros, Jogo *atual){
 	*
 ***/
 void carregarMapaSalvoEmArquivo(Jogo *jogo, char *nomeArquivoMapa){
-	FILE *file;
-	int i;
-	file = fopen(nomeArquivoMapa, "r");
+	int i,nLinhas=1;
+	char texto[300];
+	FILE *file = fopen(nomeArquivoMapa, "r");
 	if(file == NULL){
 		#if _WIN32 //Se estiver em um sistema windows
 			printf("\a\a");/** Dois beep's para não encontrado, só funciona no windows. **/
@@ -193,6 +204,19 @@ void carregarMapaSalvoEmArquivo(Jogo *jogo, char *nomeArquivoMapa){
 		printf("\n\tArquivo mapa nao encontrado!\n");
 		exit(1);
 	}else{
+		fscanf((FILE*) file, "%d", &nLinhas);
+		//printf("Numero de linhas: %d\n", nLinhas);
+		jogo->mapa = (char**) malloc(sizeof(char*) * nLinhas);
+		//para ignoranr o \n que vem após o número..
+		jogo->mapa[0] = (char*) malloc(sizeof(char) * 300);
+		fgets(jogo->mapa[0], 300, (FILE*) file);
+		for(i=0; i<nLinhas; i++){
+			jogo->mapa[i] = (char*) malloc(sizeof(char) * 300);
+			fgets(jogo->mapa[i], 300, (FILE*) file);
+		}
+		/*for(i=0; i<nLinhas; i++){
+			printf("| %s",jogo->mapa[i]);
+		}*/
 	}
 }
 /***
@@ -201,7 +225,9 @@ void carregarMapaSalvoEmArquivo(Jogo *jogo, char *nomeArquivoMapa){
 	*
 ***/
 void carregarPersonagensSalvosEmArquivo(Personagem *heroi, Personagem *monstros){
-
+	FILE *file = fopen("binario.bin", "rb");
+	fread(heroi, sizeof(Personagem), 1, file);
+	printf("%s\n", heroi->nome);
 }
 /***
 	*
@@ -219,7 +245,7 @@ void exibirArquivo(char *nomeDoArquivo){
 		exit(1);
 	}else{
 			char texto[300];
-			while(!feof(file))){
+			while(!feof(file)){
 				fgets(texto, 300, (FILE*) file);
 				printf("%s", texto);
 			}
