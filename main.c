@@ -2,13 +2,13 @@
 	*
 	*	--- RPG IP 2016 ---
 	* @descricao main.c é o arquivo principal do jogo, onde toda a mágica acontece!
-	* @desde 06/06/2016	
+	* @desde 06/06/2016
 	* @autores
 	*   [
-	*	 	Bruno Melo
+	*	 	  Bruno Melo
 	* 		Filipe Cumaru
-	*		Rafael Santana
-	*		Victor Aurélio			
+	*		  Rafael Santana
+	*		  Victor Aurélio
 	* 	]
 	*
 	*
@@ -19,9 +19,9 @@
 #include <string.h>
 #include <time.h>
 
-typedef struct{	
+typedef struct{
 	char representacao;// A letra que vai representar o personagem no mapa
-	char nome[20]; //O Nome do personagem 
+	char nome[20]; //O Nome do personagem
 	int ataque, defesa, vida;// Variáveis que representam quanto de ataque, defesa ou vida o personagem possui
 	int x, y;// Coordenadas X e Y do personagem no mapa
 }Personagem;
@@ -43,10 +43,10 @@ void carregarJogo(Personagem *heroi, Personagem *monstros, Jogo *atual);
 void criarJogo(Personagem *heroi, Personagem *monstros, Jogo *atual);
 void substituir(char *texto, char *busca, char c);
 
-int main(int argc, char const *argv[]){	
+int main(int argc, char const *argv[]){
 	Personagem *heroi, *monstros;
 	Jogo *jogoAtual;
-	
+
 	switch(pegarOpcaoMenu()){// De acordo com a opção que o menu retornar
 		case 'w': //Caso seja selecionada a primeira opção do menu
 			criarJogo(heroi, monstros, jogoAtual);
@@ -69,7 +69,7 @@ char pegarOpcaoMenu(){
 	ultimo = 'w';
 	do{
 		system("cls");
-		exibirMenu(&ultimo, &opcao);		
+		exibirMenu(&ultimo, &opcao);
 	}while((opcao = getch()) && opcao != 13);
 	return ultimo;
 }
@@ -88,10 +88,10 @@ void exibirMenu(char *ultimo, char *opcao){
 			printf("\a\a");/** Dois beep's para não encontrado, só funciona no windows. **/
 		#endif
 		printf("\n\tArquivo tela_inicial nao encontrado!\n");
-		exit(1);	
-	}else{	
-		while(!feof(file)){			
-			fgets(texto, 20000, (FILE*) file);				
+		exit(1);
+	}else{
+		while(!feof(file)){
+			fgets(texto, 20000, (FILE*) file);
 			if(*opcao == 'w' || (*opcao != 's' && *ultimo == 'w')){
 				*ultimo = 'w';
 				alterarCaracterPrePalavra(texto, "Play", '>');
@@ -108,13 +108,13 @@ void exibirMenu(char *ultimo, char *opcao){
 }
 /***
 	*
-	*	Esta função recebe um texto como parametro, 
+	*	Esta função recebe um texto como parametro,
 	* 	busca uma determinada palavra e coloca um caracter duas posições antes da palavra.
 	*
 ***/
 void alterarCaracterPrePalavra(char *texto, char *busca, char c){
 	char *ptr, *aux;
-	aux = strstr(texto,busca);		
+	aux = strstr(texto,busca);
 	if(aux != NULL){
 		ptr = aux-2;
 		*ptr = c;
@@ -122,7 +122,7 @@ void alterarCaracterPrePalavra(char *texto, char *busca, char c){
 }
 /***
 	*
-	*	Esta função irá iniciar um jogo novo.	
+	*	Esta função irá iniciar um jogo novo.
 	*
 ***/
 void iniciarJogo(){
