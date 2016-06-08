@@ -69,9 +69,12 @@ int main(int argc, char const *argv[]){
 	Jogo *jogoAtual = (Jogo*) malloc(sizeof(Jogo));
 	jogoAtual->heroi = (Personagem*) malloc(sizeof(Personagem));
 	jogoAtual->monstros = (Personagem*) malloc(sizeof(Personagem) * 4);
-
-
 	while(1){
+		system("CLS");
+		system("color 0f");
+		exibirArquivo("templates/Bem_Vindo");
+		printf("\n");
+		system("pause");
 		switch(pegarOpcaoMenu("templates/tela_inicial")){// De acordo com a opção que o menu retornar
 			case 'W': //Caso seja selecionada a primeira opção do menu
 				iniciarJogo(jogoAtual);
@@ -99,10 +102,11 @@ int main(int argc, char const *argv[]){
 						};
 				}
 				break;
-			case 'H':
+			case 72:
 				system("CLS");
 				system("color 0e");
 				exibirArquivo("templates/help");
+				printf("\n");
 				system("pause");
 		};
 	}
@@ -440,11 +444,11 @@ void telaCriarNovoPacoteDePersonagens(Jogo *jogo){
 		for(i=0; i<4; i++){
 			printf("Digite o nome do monstro %d\n", i+1);
 			scanf(" %[^\n]",jogo->monstros[i].nome);
-			printf("Digite a quantidade de vida que o heroi possui: \n");
+			printf("Digite a quantidade de vida que o monstro possui: \n");
 			scanf("%d", &jogo->monstros[i].vida);
-			printf("Digite a quantidade de ataque que o heroi possui: \n");
+			printf("Digite a quantidade de ataque que o monstro possui: \n");
 			scanf("%d", &jogo->monstros[i].ataque);
-			printf("Digite a quantidade de defesa que o heroi possui: \n");
+			printf("Digite a quantidade de defesa que o monstro possui: \n");
 			scanf("%d", &jogo->monstros[i].defesa);
 		}
 		salvarPersonagemNoIndex(nomePacotePersonagens);

@@ -1,8 +1,0 @@
-# depslib dependency file v1.0
-1465328993 source:c:\users\pc\desktop\github\eattree-rpg-if669ec\projeto\main.c
-	<stdio.h>
-	<stdlib.h>
-	<conio.h>
-	<string.h>
-	<time.h>
-
