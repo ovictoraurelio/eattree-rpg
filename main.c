@@ -65,9 +65,12 @@ int main(int argc, char const *argv[]){
 	Jogo *jogoAtual = (Jogo*) malloc(sizeof(Jogo));
 	jogoAtual->heroi = (Personagem*) malloc(sizeof(Personagem));
 	jogoAtual->monstros = (Personagem*) malloc(sizeof(Personagem) * 4);
-
-
 	while(1){
+		system("CLS");
+		system("color 0f");
+		exibirArquivo("templates/Bem_Vindo");
+		printf("\n");
+		system("pause");
 		switch(pegarOpcaoMenu("templates/tela_inicial")){// De acordo com a opção que o menu retornar
 			case 'W': //Caso seja selecionada a primeira opção do menu
 				iniciarJogo(jogoAtual);
@@ -81,7 +84,7 @@ int main(int argc, char const *argv[]){
 
 							break;
 							case 'S': //CRIAR UM MAPA
-								system("cls");
+								system("CLS");
 								char nome[200];
 								printf("digite o nome do mapa: ");
 								gets(nome);
@@ -101,10 +104,11 @@ int main(int argc, char const *argv[]){
 						};
 				}
 				break;
-			case 'H':
+			case 72:
 				system("CLS");
 				system("color 0e");
 				exibirArquivo("templates/help");
+				printf("\n");
 				system("pause");
 		};
 	}
@@ -310,11 +314,11 @@ void criarNovoPacoteDePersonagens(Jogo *jogo){
 		for(i=0; i<4; i++){
 			printf("Digite o nome do monstro %d\n", i+1);
 			scanf(" %[^\n]",jogo->monstros[i].nome);
-			printf("Digite a quantidade de vida que o heroi possui: \n");
+			printf("Digite a quantidade de vida que o monstro possui: \n");
 			scanf("%d", &jogo->monstros[i].vida);
-			printf("Digite a quantidade de ataque que o heroi possui: \n");
+			printf("Digite a quantidade de ataque que o monstro possui: \n");
 			scanf("%d", &jogo->monstros[i].ataque);
-			printf("Digite a quantidade de defesa que o heroi possui: \n");
+			printf("Digite a quantidade de defesa que o monstro possui: \n");
 			scanf("%d", &jogo->monstros[i].defesa);
 		}
 		salvarPersonagemEmPersonagensSalvos(nomePacotePersonagens);
@@ -439,7 +443,6 @@ void exibirArquivo(char *nomeDoArquivo){// função que mostra um arquivo na tel
 	}
 	fclose(file);
 }
-
 /***
 	*
 	*	Esta função retorna o nome do mapa que o jogador escolheu
@@ -458,7 +461,6 @@ void nomedoarquivomapa(int x){
  	fclose(arq);
  	for (i = 0; name[i] !='\n'; ++i);
  	name[i]='\0';
-
 }
 /***
 	*
