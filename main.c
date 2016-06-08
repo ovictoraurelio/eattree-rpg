@@ -49,17 +49,21 @@ void exibirArquivo(char *nomeDoArquivo);
 void iniciarJogo(Jogo *atual);
 void carregarJogo(Jogo *atual);
 void criarJogo(Jogo *atual);
-void carregarPersonagensSalvos();
+void listarPersonagens();
 int buscarNomeEmArquivo(char *busca, char *nomeArquivo);
 void alterarCaracterPrePalavra(char *texto, char *busca, char c);
-void carregarMapaSalvoEmArquivo(Jogo *jogo, char *nomeArquivoMapa);
-void carregarPersonagensSalvosEmArquivo(char *nomeDoArquivo, Jogo *jogo);
-void salvarMapaEmMapasSalvos(char *nomeDoMapa);
-void salvarPersonagemEmPersonagensSalvos(char *nomeDoPersonagem);
-void criarNovoPacoteDePersonagens(Jogo *jogo);
+void carregarMapaParaOJogo(Jogo *jogo, char *nomeArquivoMapa);
+void carregarPersonagensParaOJogo(char *nomeDoArquivo, Jogo *jogo);
+void salvarMapaNoIndex(char *nomeDoMapa);
+void salvarPersonagemNoIndex(char *nomeDoPersonagem);
+void telaCriarNovoPacoteDePersonagens(Jogo *jogo);
 void criarPacotePersonagens(char *nomePacotePersonagens, Personagem *heroi, Personagem *monstros);
-void draw_map (char* name);
-void nomedoarquivomapa(int x);
+void criarMapa (char* name);
+void nomeEmArquivoPorLinha(int numeroDaLinha, char *nomeDoArquivo);
+void telaSelecionarMapa(Jogo *jogo);
+void telaSelecionarPacoteDePersonagens(Jogo *jogo);
+void telaCriarNovoMapa();
+void telaCriarNovoPacoteDePersonagens();
 
 int main(int argc, char const *argv[]){
 	Jogo *jogoAtual = (Jogo*) malloc(sizeof(Jogo));
@@ -77,26 +81,20 @@ int main(int argc, char const *argv[]){
 					case 'W': // CONFIGURAÇÕES DOS MAPAS
 						switch(pegarOpcaoMenu("templates/map_options")){
 							case 'W': //SELECIONAR UM MAPA
-								nomedoarquivomapa(carregarMapasSalvos());// ######n excluir##### função que retorna o nome do mapa escolhido pelo jogador
-
+								telaSelecionarMapa(jogoAtual);
 							break;
 							case 'S': //CRIAR UM MAPA
-								system("cls");
-								char nome[200];
-								printf("digite o nome do mapa: ");
-								gets(nome);
-								draw_map(nome);
-								salvarMapaEmMapasSalvos(nome);
+								telaCriarNovoMapa(jogoAtual);
 							break;
 						};
 						break;
 					case 'S': // CONFIGURAÇÕES DE PERSONAGENS
 						switch(pegarOpcaoMenu("templates/characters_options")){
 							case 'W': //SELECIONAR UM PERSONAGEM
-								carregarPersonagensSalvos();
+								telaSelecionarPacoteDePersonagens(jogoAtual);
 							break;
 							case 'S': //CRIAR UM PERSONAGEM
-								criarNovoPacoteDePersonagens(jogoAtual);
+								telaCriarNovoPacoteDePersonagens(jogoAtual);
 							break;
 						};
 				}
@@ -111,6 +109,7 @@ int main(int argc, char const *argv[]){
 	exibirArquivo("templates/texto_final");
 	return 0;
 }
+
 /***
 	*
 	*	Esta retorna qual a opção escolhida pelo usuário no menu.
@@ -208,44 +207,111 @@ void iniciarJogo(Jogo *atual){
 ***/
 void criarJogo(Jogo *atual){
 }
+/***-----------------------------------------------------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+-----------------------
+-----------------------
+-----------------------                 MAPAS
+-----------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+/***--------------------------------------------------------------***/
+void telaSelecionarMapa(Jogo *jogo){
+	listarMapas();
+	char nomeDoMapa[50];
+	printf("\nDigite o nome do mapa que deseja selecionar:\n");
+	scanf("%50s", nomeDoMapa);
+	while(buscarNomeEmArquivo(nomeDoMapa, "mapas.txt") == 0){
+		printf("\nMapa informado nao esta na lista! Digite o nome do mapa que deseja selecionar:\n");
+		scanf("%50s", nomeDoMapa);
+	}
+	carregarMapaParaOJogo(jogo, nomeDoMapa);
+}
+void telaCriarNovoMapa(){
+	system("CLS");
+	char nomeDoMapa[50];
+	printf("\nDigite o nome do mapa(ate 50 caracteres e sem espacos): ");
+	scanf(" %50s", nomeDoMapa);
+	while(buscarNomeEmArquivo(nomeDoMapa, "mapas.txt") > 0){
+		printf("\nJa existe um mapa com este nome, por favor, digite outro: \n");
+		scanf(" %50s", &nomeDoMapa);
+	}
+	criarMapa(nomeDoMapa);
+	salvarMapaNoIndex(nomeDoMapa);
+}
+
+
 /***
 	*
-	* 	Essa função carrega os mapas salvos. Apartir do arquivo mapas.txt
+	*	Esta função cria um novo mapa segundo o jogador
 	*
 ***/
-int carregarMapasSalvos(){
-	int i,mapaSelecionado;
-	char texto[300];
-	FILE *file = fopen("mapas.txt", "r");
-	if(file == NULL){
-		#if _WIN32 //Se estiver em um sistema windows
-			printf("\a\a");/** Dois beep's para não encontrado, só funciona no windows. **/
-		#endif
-		printf("\n\tArquivo de mapas nao encontrado!\n");
-		exit(1);
-	}else{
-		system("CLS");
-		printf("\n\nMapas encontrados na base de dados:\nCod:\tNome:\n");
-		for(i=0; (!feof(file)); i++){
-			fgets(texto, 300, (FILE*) file);
-			printf("%d\t %s", i+1,texto);
-		}
-		printf("\nPressione o codigo do mapa que deseja usar: ");
-		scanf("%d", &mapaSelecionado);
-		return mapaSelecionado-1;
+void criarMapa(char* nomeDoMapa){
+	char** matriz;
+	int dim = 0, i = 0, j = 0,num;
+	char aux[60];
+	FILE* arq;
+	strcpy(aux,"mapas/");
+	strcat(aux,nomeDoMapa);
+	strcat(aux,".txt");
+	printf("Digite n na forma que (((n*4)+5) vai ser o tamanho real do mapa):");// pedindo o n
+	scanf("%d", &num);
+	dim = (4*num)+5;
+	printf("Digite o mapa  %d x %d:\n",dim,dim);// pedindo o mapa
+	matriz = (char**) malloc(dim*sizeof(char*));
+	if (matriz == NULL) {
+		exit (1);
 	}
+	for (i = 0; i <= dim; i++) {
+		matriz[i] = (char*) malloc((dim+1)*sizeof(char));
+		if (matriz[i] == NULL) {
+			printf("Erro mapa muito grande\n");// conferindo se o mapa n foi muito grande e a memória n pode ser alocada
+			exit (1);
+		}
+	}
+	for (i = 0; i < dim; i++)// pedindo o mapa
+		for (j = 0; j < dim+1; j++)// pedindo o mapa
+			scanf("%c", &matriz[i][j]);// pedindo o mapa
+	arq = fopen(aux,"w");
+	for (i = 0; i < dim; ++i)// transformando o limite do mapa em uma cerca
+	{
+		for (j = 0; j <= dim; ++j)// transformando o limite do mapa em uma cerca
+		{
+			if(i!=0 && i!= dim-1 && (j==0 || j==dim))matriz[i][j]='|';
+			if(i==0 && j==0)matriz[i][j]='/';// transformando o limite do mapa em uma cerca
+			else if(i==0 && j==dim)matriz[i][j]='\\';
+			else if(i==0)matriz[i][j]='-';// transformando o limite do mapa em uma cerca
+			if(i==dim-1 && j==0)matriz[i][j]='\\';
+			else if(i==dim-1 && j==dim)matriz[i][j]='/';
+			else if (i==dim-1)matriz[i][j]='-';// transformando o limite do mapa em uma cerca
+		}
+	}
+	fprintf(arq, "%d\n", dim);// passando a dimensão do mapa para o arquivo
+	for (i = 0; i < dim; i++) {
+		for (j = 0; j <= dim; j++){
+			fprintf(arq, "%c", matriz[i][j]);// passando mapa para o arquivo
+		}
+		fprintf(arq,"\n");
+	}
+	fclose(arq);
 }
 /***
 	*
-	* 	Essa função carrega os mapas salvos. Apartir do arquivo mapas.txt
+	* 	Essa função salva o nome do mapa no arquivo  mapas.txt nosso indice de mapas
 	*
 ***/
-void salvarMapaEmMapasSalvos(char *nomeDoMapa){
+void salvarMapaNoIndex(char *nomeDoMapa){
 	FILE *file = fopen("mapas.txt", "a");
 	if(file == NULL){
-		#if _WIN32 //Se estiver em um sistema windows
-			printf("\a\a");/** Dois beep's para não encontrado, só funciona no windows. **/
-		#endif
 		printf("\n\tArquivo de mapas nao encontrado!\n");
 		exit(1);
 	}else{
@@ -257,18 +323,40 @@ void salvarMapaEmMapasSalvos(char *nomeDoMapa){
 }
 /***
 	*
+	* 	Essa função carrega os mapas salvos. Apartir do arquivo mapas.txt
+	*
+***/
+int listarMapas(){
+	int i,mapaSelecionado;
+	char texto[50];
+	FILE *file = fopen("mapas.txt", "r");
+	if(file == NULL){
+		printf("\n\tArquivo de mapas nao encontrado!\n");
+		exit(1);
+	}else{
+		system("CLS");
+		printf("\n\nMapas encontrados na base de dados:\nCod:\tNome:\n");
+		for(i=0; (!feof(file)); i++){
+			fgets(texto, 50, (FILE*) file);
+			printf("%d\t %s", i+1,texto);
+		}
+	}
+	fclose(file);
+}
+/***
+	*
 	* 	Essa função carrega o mapa do arquivo de texto.
 	*
 ***/
-void carregarMapaSalvoEmArquivo(Jogo *jogo, char *nomeArquivoMapa){
+void carregarMapaParaOJogo(Jogo *jogo, char *nomeArquivoMapa){
 	int i,nLinhas=1;
-	char texto[300];
-	FILE *file = fopen(nomeArquivoMapa, "r");
+	char texto[300], aux[60];
+	strcpy(aux, "mapas/");
+	strcat(aux, nomeArquivoMapa);
+	strcat(aux, ".txt");
+	FILE *file = fopen(aux, "r");
 	if(file == NULL){
-		#if _WIN32 //Se estiver em um sistema windows
-			printf("\a\a");/** Dois beep's para não encontrado, só funciona no windows. **/
-		#endif
-		printf("\n\tArquivo mapa nao encontrado!\n");
+		printf("\n\tArquivo de mapa %s nao encontrado!\n", nomeArquivoMapa);
 		exit(1);
 	}else{
 		fscanf((FILE*) file, "%d", &nLinhas);
@@ -283,12 +371,54 @@ void carregarMapaSalvoEmArquivo(Jogo *jogo, char *nomeArquivoMapa){
 		}
 	}
 }
-/***
-	*
-	* 	Essa função gerencia a criação de um novo pacote de personagens
-	*
-***/
-void criarNovoPacoteDePersonagens(Jogo *jogo){
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/***-----------------------------------------------------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+-----------------------
+-----------------------
+-----------------------                 PERSONAGENS
+-----------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+-----------------------------------------------------------------***/
+void telaSelecionarPacoteDePersonagens(Jogo *jogo){
+		system("CLS");
+		listarPersonagens();
+		char nomeDoPacoteDePersonagens[50];
+		printf("\n\nDigite o nome do personagem que deseja selecionar:\n");
+		scanf("%50s", nomeDoPacoteDePersonagens);
+		while(buscarNomeEmArquivo(nomeDoPacoteDePersonagens, "personagens.txt") == 0){
+			printf("\nNome informado nao esta na lista! Digite o nome do personagem que deseja selecionar:\n");
+			scanf("%50s", nomeDoPacoteDePersonagens);
+		}
+		carregarPersonagensParaOJogo(nomeDoPacoteDePersonagens, jogo);
+}
+void telaCriarNovoPacoteDePersonagens(Jogo *jogo){
 		int i;
 		char nomePacotePersonagens[50];
 		system("CLS");
@@ -317,15 +447,15 @@ void criarNovoPacoteDePersonagens(Jogo *jogo){
 			printf("Digite a quantidade de defesa que o heroi possui: \n");
 			scanf("%d", &jogo->monstros[i].defesa);
 		}
-		salvarPersonagemEmPersonagensSalvos(nomePacotePersonagens);
+		salvarPersonagemNoIndex(nomePacotePersonagens);
 		criarPacotePersonagens(nomePacotePersonagens, jogo->heroi, jogo->monstros);
 }
 /***
 	*
-	* 	Essa função salva o nome do pacote de personagens em personagens salvos.
+	* 	Essa função salva o nome do pacote de personagens em personagens.txt nosso indice de personagens.
 	*
 ***/
-void salvarPersonagemEmPersonagensSalvos(char *nomeDoPersonagem){
+void salvarPersonagemNoIndex(char *nomeDoPersonagem){
 	FILE *file = fopen("personagens.txt", "a");
 	if(file == NULL){
 		printf("\n\tArquivo de personagens nao encontrado!\n");
@@ -363,7 +493,7 @@ void criarPacotePersonagens(char *nomePacotePersonagens, Personagem *heroi, Pers
 	* 	Essa função carrega os personagens do arquivo binário.
 	*
 ***/
-void carregarPersonagensSalvos(){
+void listarPersonagens(){
 	int i,personagemSelecionado;
 	char texto[50];
 	FILE *file = fopen("personagens.txt", "r");
@@ -372,13 +502,11 @@ void carregarPersonagensSalvos(){
 		exit(1);
 	}else{
 		system("CLS");
-		printf("\n\nPersonagens encontrados na base de dados:\nCod:\tNome:\n");
-		for(i=0; (!feof(file)); i++){
+		printf("\n\nPersonagens encontrados na base de dados:\n\n");
+		while(!feof(file)){
 			fgets(texto, 50, (FILE*) file);
-			printf("%d\t %s", i+1,texto);
+			printf("%s", texto);
 		}
-		printf("\nPressione o codigo do pacote de personagens que deseja usar: ");
-		scanf("%d", &personagemSelecionado);
 	}
 }
 /***
@@ -386,7 +514,7 @@ void carregarPersonagensSalvos(){
 	* 	Essa função carrega os personagens do arquivo binário.
 	*
 ***/
-void carregarPersonagensSalvosEmArquivo(char *nomeDoArquivo, Jogo *jogo){
+void carregarPersonagensParaOJogo(char *nomeDoArquivo, Jogo *jogo){
 	FILE *file = fopen("binario.bin", "rb");
 	fread(jogo->heroi, sizeof(Personagem), 1, file);
 	int i;
@@ -396,6 +524,37 @@ void carregarPersonagensSalvosEmArquivo(char *nomeDoArquivo, Jogo *jogo){
 	printf("%s\n", jogo->heroi->nome);
 	fclose(file);
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+/***-----------------------------------------------------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+-----------------------
+-----------------------
+-----------------------                 ÚTEIS
+-----------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+-----------------------------------------------------------------***/
 /***
 	*
 	* 	Essa função pesquisa por um nome de até 50 caracteres em algum arquivo que armazene strings de até 50 caracteres, linha por linha..
@@ -439,80 +598,21 @@ void exibirArquivo(char *nomeDoArquivo){// função que mostra um arquivo na tel
 	}
 	fclose(file);
 }
-
 /***
 	*
 	*	Esta função retorna o nome do mapa que o jogador escolheu
 	*
 	*
 ***/
-void nomedoarquivomapa(int x){
+void nomeEmArquivoPorLinha(int numeroDaLinha, char *nomeDoArquivo){
 	int i;
-	char* name=(char*) malloc(100*sizeof(char));
+	char* nome = (char*) malloc(100*sizeof(char));
 	FILE* arq;
-	arq = fopen("mapas.txt","r");
- 	for (i = 0; i <= x; ++i)
- 	{
- 		fgets(name,100,arq);
+	arq = fopen(nomeDoArquivo,"r");
+ 	for (i = 0; i <= numeroDaLinha; ++i){
+ 		fgets(nome,100,arq);
  	}
  	fclose(arq);
- 	for (i = 0; name[i] !='\n'; ++i);
- 	name[i]='\0';
-
-}
-/***
-	*
-	*	Esta função cria um novo mapa segundo o jogador
-	*
-	*
-***/
-
-void draw_map (char* name)// função que cria mapa
-{
-	char** matriz;
-	int dim = 0, i = 0, j = 0,num;
-	char aux[100]={'m','a','p','a','s','/','\0'},aux2[5]={'.','t','x','t','\0'};// fazendo alguns ajuste no caminho do arquivo
-	FILE* arq;
-	strcat(name,aux2);// com ajuda dessa função
-	strcat(aux,name);
-	printf("Digite n na forma que (((n*4)+5) vai ser o tamanho real do mapa):");// pedindo o n
-	scanf("%d", &num);
-	dim = (4*num)+5;
-	printf("Digite o mapa  %d x %d:\n",dim,dim);// pedindo o mapa
-	matriz = (char**) malloc(dim*sizeof(char*));
-	if (matriz == NULL) {
-		exit (1);
-	}
-	for (i = 0; i <= dim; i++) {
-		matriz[i] = (char*) malloc((dim+1)*sizeof(char));
-		if (matriz[i] == NULL) {
-			printf("Erro mapa muito grande\n");// conferindo se o mapa n foi muito grande e a memória n pode ser alocada
-			exit (1);
-		}
-	}
-	for (i = 0; i < dim; i++)// pedindo o mapa
-		for (j = 0; j < dim+1; j++)// pedindo o mapa
-			scanf("%c", &matriz[i][j]);// pedindo o mapa
-	arq = fopen(aux,"w");
-	for (i = 0; i < dim; ++i)// transformando o limite do mapa em uma cerca
-	{
-		for (j = 0; j <= dim; ++j)// transformando o limite do mapa em uma cerca
-		{
-			if(i!=0 && i!= dim-1 && (j==0 || j==dim))matriz[i][j]='|';
-			if(i==0 && j==0)matriz[i][j]='/';// transformando o limite do mapa em uma cerca
-			else if(i==0 && j==dim)matriz[i][j]='\\';
-			else if(i==0)matriz[i][j]='-';// transformando o limite do mapa em uma cerca
-			if(i==dim-1 && j==0)matriz[i][j]='\\';
-			else if(i==dim-1 && j==dim)matriz[i][j]='/';
-			else if (i==dim-1)matriz[i][j]='-';// transformando o limite do mapa em uma cerca
-		}
-	}
-	fprintf(arq, "%d\n", dim);// passando a dimensão do mapa para o arquivo
-	for (i = 0; i < dim; i++) {
-		for (j = 0; j <= dim; j++){
-			fprintf(arq, "%c", matriz[i][j]);// passando mapa para o arquivo
-		}
-		fprintf(arq,"\n");
-	}
-	fclose(arq);
+ 	for (i = 0; nome[i] !='\n'; ++i);
+ 	nome[i]='\0';
 }
