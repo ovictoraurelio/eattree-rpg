@@ -375,23 +375,6 @@ void carregarMapaParaOJogo(Jogo *jogo, char *nomeArquivoMapa){
 		}
 	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /***-----------------------------------------------------------------
 ---------------------------------------------------------------------
 ---------------------------------------------------------------------
@@ -506,7 +489,7 @@ void listarPersonagens(){
 		exit(1);
 	}else{
 		system("CLS");
-		printf("\n\nPersonagens encontrados na base de dados:\n\n");
+		printf("\n\nPacotes de personagens encontrados na base de dados:\n\n");
 		while(!feof(file)){
 			fgets(texto, 50, (FILE*) file);
 			printf("%s", texto);
@@ -528,19 +511,6 @@ void carregarPersonagensParaOJogo(char *nomeDoArquivo, Jogo *jogo){
 	printf("%s\n", jogo->heroi->nome);
 	fclose(file);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 /***-----------------------------------------------------------------
 ---------------------------------------------------------------------
 ---------------------------------------------------------------------
@@ -568,6 +538,7 @@ int buscarNomeEmArquivo(char *busca, char *nomeArquivo){
 	FILE *file = fopen(nomeArquivo, "r");
 	if(file == NULL){
 			printf("\n\nTentando buscar a palavra %s no arquivo %s mas o arquivo não foi encontrado!\n", busca, nomeArquivo);
+			exit(1);
 	}else{
 			char texto[50];
 			while(!feof(file)){
