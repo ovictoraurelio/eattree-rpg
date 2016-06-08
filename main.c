@@ -15,13 +15,14 @@
 ***/
 #include <stdio.h>
 #include <stdlib.h>
-#include <conio.h>
 #include <string.h>
 #include <time.h>
-
-#define CLS cls;
-#if UNIX //Se estiver em um sistema linux
-	#define CLS clear
+#ifdef __unix__
+	#include <curses.h>
+	#define CLS "clear"
+#elif _WIN32
+	#define CLS "cls";
+	#include <conio.h>
 #endif
 
 typedef struct{
@@ -70,11 +71,11 @@ int main(int argc, char const *argv[]){
 	jogoAtual->heroi = (Personagem*) malloc(sizeof(Personagem));
 	jogoAtual->monstros = (Personagem*) malloc(sizeof(Personagem) * 4);
 	while(1){
-		system("CLS");
+		system(CLS);
 		system("color 0f");
 		exibirArquivo("templates/Bem_Vindo");
 		printf("\n");
-		system("pause");
+		getch();
 		switch(pegarOpcaoMenu("templates/tela_inicial")){// De acordo com a opção que o menu retornar
 			case 'W': //Caso seja selecionada a primeira opção do menu
 				iniciarJogo(jogoAtual);
@@ -103,7 +104,7 @@ int main(int argc, char const *argv[]){
 				}
 				break;
 			case 72:
-				system("CLS");
+				system(CLS);
 				system("color 0e");
 				exibirArquivo("templates/help");
 				printf("\n");
@@ -123,7 +124,7 @@ char pegarOpcaoMenu(char *nomeArquivoDeMenu){
 	char ultimo='S', opcao='W';
 	do{
 		if(ultimo != opcao && (opcao == 'W' || opcao == 'S')){// Só vai redezenhar se ele realmente alternar entre as posições...
-			system("CLS");
+			system(CLS);
 			exibirMenu(nomeArquivoDeMenu, &ultimo, &opcao);
 		}
 	}while((opcao = toupper(getch())) && opcao != 13 && opcao != 3 && opcao != 'H');
@@ -241,13 +242,13 @@ void telaSelecionarMapa(Jogo *jogo){
 	carregarMapaParaOJogo(jogo, nomeDoMapa);
 }
 void telaCriarNovoMapa(){
-	system("CLS");
+	system(CLS);
 	char nomeDoMapa[50];
 	printf("\nDigite o nome do mapa(ate 50 caracteres e sem espacos): ");
 	scanf(" %50s", nomeDoMapa);
 	while(buscarNomeEmArquivo(nomeDoMapa, "mapas.txt") > 0){
 		printf("\nJa existe um mapa com este nome, por favor, digite outro: \n");
-		scanf(" %50s", &nomeDoMapa);
+		scanf(" %50s", nomeDoMapa);
 	}
 	criarMapa(nomeDoMapa);
 	salvarMapaNoIndex(nomeDoMapa);
@@ -319,7 +320,7 @@ void salvarMapaNoIndex(char *nomeDoMapa){
 		printf("\n\tArquivo de mapas nao encontrado!\n");
 		exit(1);
 	}else{
-		system("CLS");
+		system(CLS);
 		fprintf((FILE*) file,"\n");
 		fputs(nomeDoMapa, (FILE*) file);
 	}
@@ -338,7 +339,7 @@ int listarMapas(){
 		printf("\n\tArquivo de mapas nao encontrado!\n");
 		exit(1);
 	}else{
-		system("CLS");
+		system(CLS);
 		printf("\n\nMapas encontrados na base de dados:\nCod:\tNome:\n");
 		for(i=0; (!feof(file)); i++){
 			fgets(texto, 50, (FILE*) file);
@@ -394,7 +395,7 @@ void carregarMapaParaOJogo(Jogo *jogo, char *nomeArquivoMapa){
 ---------------------------------------------------------------------
 -----------------------------------------------------------------***/
 void telaSelecionarPacoteDePersonagens(Jogo *jogo){
-		system("CLS");
+		system(CLS);
 		listarPersonagens();
 		char nomeDoPacoteDePersonagens[50];
 		printf("\n\nDigite o nome do personagem que deseja selecionar:\n");
@@ -408,13 +409,13 @@ void telaSelecionarPacoteDePersonagens(Jogo *jogo){
 void telaCriarNovoPacoteDePersonagens(Jogo *jogo){
 		int i;
 		char nomePacotePersonagens[50];
-		system("CLS");
+		system(CLS);
 		printf("Bem vindo a criacao de um novo pacote de personagens!!\n");
 		printf("Digite o nome do pacote de personagens(ate 50 caracteres, sem espacos): \n");
-		scanf(" %50s", &nomePacotePersonagens);
+		scanf(" %50s", nomePacotePersonagens);
 		while(buscarNomeEmArquivo(nomePacotePersonagens, "personagens.txt") > 0){
 			printf("Ja existe um pacote de personagens com este nome, por favor, digite outro: \n");
-			scanf(" %50s", &nomePacotePersonagens);
+			scanf(" %50s", nomePacotePersonagens);
 		}
 		printf("Digite o nome do heroi\n");
 		scanf(" %[^\n]",jogo->heroi->nome);
@@ -488,7 +489,7 @@ void listarPersonagens(){
 		printf("\n\tArquivo de personagens nao encontrado!\n");
 		exit(1);
 	}else{
-		system("CLS");
+		system(CLS);
 		printf("\n\nPacotes de personagens encontrados na base de dados:\n\n");
 		while(!feof(file)){
 			fgets(texto, 50, (FILE*) file);
