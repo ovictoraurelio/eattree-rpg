@@ -68,7 +68,7 @@ void iniciarJogo(Jogo *atual);
 
 Personagem* buscarMonstroEmbate(Jogo *jogo);
 void carregarMapaParaOJogo(Jogo *jogo, char *nomeArquivoMapa);
-void carregarPersonagensParaOJogo(char *nomeDoArquivo, Jogo *jogo);
+void carregarPersonagensParaOJogo(Jogo *jogo, char *nomeDoArquivo);
 void desenharMapa(Jogo *jogo, int *rodada);
 void definirNovaPosicaoNoMapa(int teclaPressionada, int *x, int *y, int *tamanhoMapa, int vidaPersonagem);
 void exibirMenu(char *arquivoDeMenu, char *ultimo, char *opcao);
@@ -84,7 +84,7 @@ void telaSelecionarPacoteDePersonagens(Jogo *jogo);
 void telaPreJogo(Jogo *jogo);
 int iniciarEmbate(Jogo *jogo);
 int validaMovimento (int x, int y, int tamanho, int monstro, Jogo* jogo);
-
+void sairDoJogo(Jogo *jogo);
 // PROVAVEL BIBLIOTECA - FUNÇÕES DE ARQUIVO:
 void alterarCaracterPrePalavra(char *texto, char *busca, char c);
 int buscarNomeEmArquivo(char *busca, char *nomeArquivo);
@@ -97,10 +97,6 @@ void salvarMapaNoIndex(char *nomeDoMapa);
 void salvarPersonagemNoIndex(char *nomeDoPersonagem);
 
 
-
-void limparPonteiroSeNaoEhNulo(void *ponteiro);
-
-
 int main(int argc, char const *argv[]){
 	Jogo *jogoAtual = (Jogo*) calloc(1,sizeof(Jogo));
 	jogoAtual->heroi = (Personagem*) calloc(1,sizeof(Personagem));
@@ -110,7 +106,7 @@ int main(int argc, char const *argv[]){
 		system(CLS);
 		system("color 0f");
 		if(exibirBemVindo){
-			exibirArquivo("templates/Bem_Vindo");
+			exibirArquivo("templates/bem_vindo");
 			getch();
 			exibirBemVindo = 0;
 		}
@@ -151,7 +147,7 @@ int main(int argc, char const *argv[]){
 			break;
 		};
 	}
-	exibirArquivo("templates/texto_final");
+	sairDoJogo(jogoAtual);
 	return 0;
 }
 /***
@@ -248,7 +244,7 @@ void alterarCaracterPrePalavra(char *texto, char *busca, char c){
 void telaPreJogo(Jogo *jogo){
 		system(CLS);
 		if(strcmp(jogo->heroi->nome, "") == 0){ // Heroi sempre vai estar alocado.. Porém se tivermos carregado um pacote de personagens teremos um nome para o heroi
-				carregarPersonagensParaOJogo("default", jogo);
+				carregarPersonagensParaOJogo(jogo, "default");
 				jogo->nomePacotePersonagens = "default";
 		}
 		if(jogo->mapa == NULL){
@@ -259,7 +255,7 @@ void telaPreJogo(Jogo *jogo){
 				exibirArquivo("templates/jogoCarregado");
 				printf("\nMapa selecionado: %s",jogo->nomeMapa);
 				printf("\nPacote de personagens selecionado: %s",jogo->nomePacotePersonagens);
-				delay(2000); // Espera 2 segundos
+				delay(2000);// Espera 2 segundos
 				iniciarJogo(jogo);
 		}else{
 				printf("\nProblemas ao carregar o jogo!");
@@ -412,7 +408,7 @@ int iniciarEmbate(Jogo *jogo){
 	Personagem *monstroEmbate;
 	monstroEmbate = buscarMonstroEmbate(jogo);
 	exibirTelaEmbate(jogo, monstroEmbate);
-	printf("\n\n\n\tOS CAMPEOES ESTAO NA ARENA DE BATALHA!\n\n%s pressione a tecla T para atacar!!\n", jogo->heroi->nome);
+	printf("\n\n\n\tOS CAMPEOES ESTAO NA ARENA DE BATALHA!\n\n%s voce eh o primeiro a atacar!\nPressione a tecla T para atacar: ", jogo->heroi->nome);
 	while(jogo->heroi->vida > 0 && monstroEmbate->vida > 0 && ((jogada = toupper(getch())) && jogada != 'R')){
 		if(jogada == 'T' && jogo->heroi->vida > 0 && monstroEmbate->vida > 0){
 				rangeAtaqueHeroi = range(jogo->heroi->vida, jogo->heroi->ataque, monstroEmbate->vida, monstroEmbate->ataque);
@@ -422,8 +418,10 @@ int iniciarEmbate(Jogo *jogo){
 				//printf("\a\n\nAgora eh a vez de %s contra-atacar!!\n", monstroEmbate->nome);
 				//delay(1500);
 				monstroEmbate->vida = monstroEmbate->vida - (jogo->heroi->ataque + rangeAtaqueHeroi - monstroEmbate->defesa );
+				jogo->heroi->vida = jogo->heroi->vida > 0 ? jogo->heroi->vida : 0;
+				monstroEmbate->vida = monstroEmbate->vida > 0 ? monstroEmbate->vida : 0;
 				exibirTelaEmbate(jogo, monstroEmbate);
-				printf("\a\n\nAgora eh sua vez %s de atacar!!\n", jogo->heroi->nome);
+				printf("\a\n\nAgora eh sua vez %s de atacar: ", jogo->heroi->nome);
 		}
 	}
 	if(monstroEmbate->vida <= 0){
@@ -431,18 +429,19 @@ int iniciarEmbate(Jogo *jogo){
 		posicionarPersonagem(monstroEmbate, -1, -1);
 		return 1;
 	}else if(jogo->heroi->vida <= 0){
-		//heroi morreu...
-		system(CLS);
+				//heroi morreu...
+				system(CLS);
 		switch(pegarOpcaoMenu("templates/game_over")){
 			case 'W':
-				carregarPersonagensParaOJogo(jogo->nomePacotePersonagens, jogo);
+				jogo->pontuacao=0;
+				carregarPersonagensParaOJogo(jogo, jogo->nomePacotePersonagens);
 				carregarMapaParaOJogo(jogo, jogo->nomeMapa);
 				return 0;
 				// o 0 irá parar a função iniciarJogo.. irá forçar a voltar pro while do main.
 				// retornar pro menu principal
 			break;
 			case 'S':
-				exit(0);
+				sairDoJogo(jogo);
 			break;
 			default: break;
 		}
@@ -625,11 +624,13 @@ void carregarMapaParaOJogo(Jogo *jogo, char *nomeArquivoMapa){
 		printf("\n\tArquivo de mapa %s nao encontrado!\n", nomeArquivoMapa);
 		exit(1);
 	}else{
-		limparPonteiroSeNaoEhNulo(jogo->nomeMapa);
-		jogo->nomeMapa = (char*) malloc(strlen(nomeArquivoMapa) * sizeof(char));
+		if(jogo->nomeMapa == NULL){
+				jogo->nomeMapa = (char*) malloc(strlen(nomeArquivoMapa) * sizeof(char));
+		}
 		strcpy(jogo->nomeMapa, nomeArquivoMapa);
 		fscanf(file, "%d", &jogo->tamanho);
-		limparPonteiroSeNaoEhNulo(jogo->mapa);
+		if(jogo->mapa != NULL)
+			free(jogo->mapa);
 		jogo->mapa = (char**) malloc(sizeof(char*) * jogo->tamanho);
 		jogo->mapa[0] = (char*) malloc(sizeof(char) * 300);//quebra de linha após o inteiro
 		fgets(jogo->mapa[0], 300, (FILE*) file);
@@ -670,7 +671,7 @@ void telaSelecionarPacoteDePersonagens(Jogo *jogo){
 			printf("\nNome informado nao esta na lista!\nDigite o nome do personagem que deseja selecionar:\n");
 			scanf(" %50s", nomeDoPacoteDePersonagens);
 		}
-		carregarPersonagensParaOJogo(nomeDoPacoteDePersonagens, jogo);
+		carregarPersonagensParaOJogo(jogo, nomeDoPacoteDePersonagens);
 }
 void telaCriarPacoteDePersonagens(Jogo *jogo){
 		int i;
@@ -772,7 +773,7 @@ void listarPersonagens(){
 	* 	Essa função carrega os personagens do arquivo binário.
 	*
 ***/
-void carregarPersonagensParaOJogo(char *nomeDoArquivo, Jogo *jogo){
+void carregarPersonagensParaOJogo(Jogo *jogo, char *nomeDoArquivo){
 	char *aux = (char*) malloc(sizeof(char) * 68);
 	int i;
 	strcpy(aux,"personagens/");
@@ -783,8 +784,9 @@ void carregarPersonagensParaOJogo(char *nomeDoArquivo, Jogo *jogo){
 		printf("\n\tArquivo %s nao encontrado!\n", aux);
 		exit(1);
 	}else{
-			limparPonteiroSeNaoEhNulo(jogo->nomePacotePersonagens);
-			jogo->nomePacotePersonagens = (char*) malloc(strlen(nomeDoArquivo) * sizeof(char));
+			if(jogo->nomePacotePersonagens == NULL){
+					jogo->nomePacotePersonagens = (char*) malloc(strlen(nomeDoArquivo) * sizeof(char));
+			}
 			strcpy(jogo->nomePacotePersonagens, nomeDoArquivo);
 			fread(jogo->heroi, sizeof(Personagem), 1, file);
 			for(i=0; i<4; i++){
@@ -859,8 +861,9 @@ void exibirArquivo(char *nomeDoArquivo){// função que mostra um arquivo na tel
 	fclose(file);
 	free(texto);
 }
-
-void limparPonteiroSeNaoEhNulo(void *ponteiro){
-	if(ponteiro != NULL)
-			free(ponteiro);
+void sairDoJogo(Jogo *jogo){
+		system(CLS);
+		exibirArquivo("templates/texto_final");
+		free(jogo);
+		exit(0);
 }
