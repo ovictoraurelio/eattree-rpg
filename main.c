@@ -74,7 +74,7 @@ void definirNovaPosicaoNoMapa(int teclaPressionada, int *x, int *y, int *tamanho
 void exibirMenu(char *arquivoDeMenu, char *ultimo, char *opcao);
 void exibirTelaEmbate(Jogo *jogo, Personagem *monstroEmbate);
 int move(int w, int x, int y, int z, int e);
-void movimentarPersonagem(int x, int y, Personagem* personagem, char **mapa, int tamanhoMapa, int monstro);
+void movimentarPersonagem(int x, int y, Personagem* personagem, Jogo *jogo, int tamanhoMapa, int monstro);
 char pegarOpcaoMenu(char *nomeArquivoDeMenu);
 void posicionarPersonagem(Personagem *personagem, int x, int y);
 void telaCriarMapa();
@@ -95,6 +95,11 @@ void listarPersonagens();
 void listarMapas();
 void salvarMapaNoIndex(char *nomeDoMapa);
 void salvarPersonagemNoIndex(char *nomeDoPersonagem);
+
+
+
+void limparPonteiroSeNaoEhNulo(void *ponteiro);
+
 
 int main(int argc, char const *argv[]){
 	Jogo *jogoAtual = (Jogo*) calloc(1,sizeof(Jogo));
@@ -184,12 +189,13 @@ char pegarOpcaoMenu(char *nomeArquivoDeMenu){
 ***/
 void exibirMenu(char *nomeArquivoDeMenu, char *ultimo, char *opcao){
 	int i;
-	char texto[300], palavras[2][50];
+	char *texto, **palavras;
+	palavras = (char**) malloc(sizeof(char) * 2);
+	palavras[0] = (char*) malloc(sizeof(char) * 51);
+	palavras[1] = (char*) malloc(sizeof(char) * 51);
+	texto = (char*) malloc(sizeof(char) * 251);
 	FILE *file = fopen(nomeArquivoDeMenu, "r");
 	if(file == NULL){
-		#if _WIN32 //Se estiver em um sistema windows
-			printf("\a\a");/** Dois beep's para não encontrado, só funciona no windows. **/
-		#endif
 		printf("\n\tArquivo %s nao encontrado!\n", nomeArquivoDeMenu);
 		exit(1);
 	}else{
@@ -202,7 +208,7 @@ void exibirMenu(char *nomeArquivoDeMenu, char *ultimo, char *opcao){
 			}else{
 				// As próximas linhas de leitura
 				//Temos as duas primeiras palavras escaneadas, sabemos diretamente do menu quem deve ser a opção de cima e a opção de baixo.
-				fgets(texto, 300, (FILE*) file);
+				fgets(texto, 250, (FILE*) file);
 				if(*opcao == 'W'){
 					*ultimo = 'W';
 					alterarCaracterPrePalavra(texto, palavras[0], '>');
@@ -216,6 +222,8 @@ void exibirMenu(char *nomeArquivoDeMenu, char *ultimo, char *opcao){
 			}
 		}
 	}
+	free(texto);
+	free(palavras);
 	fclose(file);
 }
 /***
@@ -271,24 +279,24 @@ void iniciarJogo(Jogo *jogo){
 		while(continuarAposEmbate && jogo->heroi->vida > 0 && jogo->monstros[0].vida > 0 && jogo->monstros[1].vida > 0  && jogo->monstros[2].vida > 0 && jogo->monstros[3].vida > 0 && teclaPressionada != 3){
 			while(continuarAposEmbate && ( teclaPressionada = toupper(getch()) ) && (teclaPressionada=='A' || teclaPressionada=='S' || teclaPressionada=='W' || teclaPressionada=='D') && teclaPressionada != 3){
 				if(jogo->pontuacao > 0){
-					jogo->pontuacao--;	
-				}					
+					jogo->pontuacao--;
+				}
 				novoX = jogo->heroi->x;
 				novoY = jogo->heroi->y;
 				definirNovaPosicaoNoMapa(teclaPressionada, &novoX, &novoY, &jogo->tamanho, jogo->heroi->vida);
-				movimentarPersonagem(novoX, novoY, jogo->heroi, jogo->mapa, jogo->tamanho, 0);
+				movimentarPersonagem(novoX, novoY, jogo->heroi, jogo, jogo->tamanho, 0);
 				if(jogo->mapa[novoY][novoX] == '*'){
 					jogo->pontuacao+=20;
 					jogo->mapa[novoY][novoX] = ' ';
 				}else if(buscarMonstroEmbate(jogo) != NULL){
 					continuarAposEmbate = iniciarEmbate(jogo);
-				}				
+				}
 				for (i = 0; i < 4; i++){
 					movimento = move(jogo->heroi->x,jogo->heroi->y,jogo->monstros[i].x,jogo->monstros[i].y,rodada);
 					novoX = jogo->monstros[i].x;
 					novoY = jogo->monstros[i].y;
 					definirNovaPosicaoNoMapa(movimento, &novoX, &novoY, &jogo->tamanho, jogo->monstros[i].vida);
-					movimentarPersonagem(novoX, novoY, &jogo->monstros[i], jogo->mapa, jogo->tamanho, i+1);
+					movimentarPersonagem(novoX, novoY, &jogo->monstros[i], jogo, jogo->tamanho, i+1);
 				}
 				if(continuarAposEmbate){ // para não desenhar após reiniciar o jogo..
 					rodada++;
@@ -332,8 +340,7 @@ void desenharMapa(Jogo *jogo, int *rodada){
 	* Função que determina o movimento pseudo-aleatório dos monstros
 	*
 */
-int move (int w, int x, int y, int z, int e)
-{
+int move(int w, int x, int y, int z, int e){
 	if (w == 0 || x == 0 || y == 0 || z == 0 || e == 0)
 		return 0;
 	else
@@ -373,17 +380,17 @@ void definirNovaPosicaoNoMapa(int teclaPressionada, int *x, int *y, int *tamanho
 		}
 	}
 }
-void movimentarPersonagem(int x, int y, Personagem* personagem, char **mapa, int tamanhoMapa, int monstro){
+void movimentarPersonagem(int x, int y, Personagem* personagem, Jogo* jogo, int tamanhoMapa, int monstro){
 	int podeMovimentar=0;
-	if(monstro == 0)// Monstro 0 é o heroi! 
+	if(monstro == 0)// Monstro 0 é o heroi!
 		podeMovimentar = 1;
-	else if(monstro == 1 && mapa[y][x] != '*' && mapa[y][x] != 'H' && (0 < x && x < tamanhoMapa/2 && 0 < y && y < tamanhoMapa/2))
-		podeMovimentar=1;
-	else if(monstro == 2 && mapa[y][x] != '*' && mapa[y][x] != 'H' && (tamanhoMapa/2 < x && x < tamanhoMapa-1 && 0 < y && y < tamanhoMapa/2))
+	else if(monstro == 1 && jogo->mapa[y][x] != '*' && jogo->heroi->x != x && jogo->heroi->y != y && (0 < x && x < tamanhoMapa/2 && 0 < y && y < tamanhoMapa/2))
 		podeMovimentar = 1;
-	else if(monstro == 3 && mapa[y][x] != '*' && mapa[y][x] != 'H' && (0 < x && x < tamanhoMapa/2 && tamanhoMapa/2 < y && y < tamanhoMapa-1))
+	else if(monstro == 2 && jogo->mapa[y][x] != '*' && jogo->heroi->x != x && jogo->heroi->y != y && (tamanhoMapa/2 < x && x < tamanhoMapa-1 && 0 < y && y < tamanhoMapa/2))
 		podeMovimentar = 1;
-	else if(monstro == 4 && mapa[y][x] != '*' && mapa[y][x] != 'H' && (tamanhoMapa/2 < x && x < tamanhoMapa-1 && tamanhoMapa/2 < y && y < tamanhoMapa-1))
+	else if(monstro == 3 && jogo->mapa[y][x] != '*' && jogo->heroi->x != x && jogo->heroi->y != y && (0 < x && x < tamanhoMapa/2 && tamanhoMapa/2 < y && y < tamanhoMapa-1))
+		podeMovimentar = 1;
+	else if(monstro == 4 && jogo->mapa[y][x] != '*' && jogo->heroi->x != x && jogo->heroi->y != y && (tamanhoMapa/2 < x && x < tamanhoMapa-1 && tamanhoMapa/2 < y && y < tamanhoMapa-1))
 		podeMovimentar = 1;
 	if(podeMovimentar){
 		personagem->x = x;
@@ -403,12 +410,12 @@ int range(int w, int x, int y, int z){
 int iniciarEmbate(Jogo *jogo){
 	int i, jogada, rangeAtaqueHeroi;
 	Personagem *monstroEmbate;
-	monstroEmbate = buscarMonstroEmbate(jogo);	
+	monstroEmbate = buscarMonstroEmbate(jogo);
 	exibirTelaEmbate(jogo, monstroEmbate);
 	printf("\n\n\n\tOS CAMPEOES ESTAO NA ARENA DE BATALHA!\n\n%s pressione a tecla T para atacar!!\n", jogo->heroi->nome);
-	while(jogo->heroi->vida > 0 && monstroEmbate->vida > 0 && ((jogada = toupper(getch())) && jogada != 'R')){		
+	while(jogo->heroi->vida > 0 && monstroEmbate->vida > 0 && ((jogada = toupper(getch())) && jogada != 'R')){
 		if(jogada == 'T' && jogo->heroi->vida > 0 && monstroEmbate->vida > 0){
-				rangeAtaqueHeroi = range(jogo->heroi->vida, jogo->heroi->ataque, monstroEmbate->vida, monstroEmbate->ataque);				
+				rangeAtaqueHeroi = range(jogo->heroi->vida, jogo->heroi->ataque, monstroEmbate->vida, monstroEmbate->ataque);
 				jogo->heroi->vida = jogo->heroi->vida - (monstroEmbate->ataque + range(monstroEmbate->vida, monstroEmbate->ataque, jogo->heroi->vida, jogo->heroi->ataque) - jogo->heroi->defesa );
 				jogo->pontuacao += jogo->heroi->ataque + rangeAtaqueHeroi;
 				//exibirTelaEmbate(jogo, monstroEmbate);
@@ -417,10 +424,10 @@ int iniciarEmbate(Jogo *jogo){
 				monstroEmbate->vida = monstroEmbate->vida - (jogo->heroi->ataque + rangeAtaqueHeroi - monstroEmbate->defesa );
 				exibirTelaEmbate(jogo, monstroEmbate);
 				printf("\a\n\nAgora eh sua vez %s de atacar!!\n", jogo->heroi->nome);
-		}		
+		}
 	}
 	if(monstroEmbate->vida <= 0){
-		//matou o monstro..		
+		//matou o monstro..
 		posicionarPersonagem(monstroEmbate, -1, -1);
 		return 1;
 	}else if(jogo->heroi->vida <= 0){
@@ -428,8 +435,8 @@ int iniciarEmbate(Jogo *jogo){
 		system(CLS);
 		switch(pegarOpcaoMenu("templates/game_over")){
 			case 'W':
-				carregarPersonagensParaOJogo(jogo->nomePacotePersonagens, jogo);				
-				carregarMapaParaOJogo(jogo, jogo->nomeMapa);				
+				carregarPersonagensParaOJogo(jogo->nomePacotePersonagens, jogo);
+				carregarMapaParaOJogo(jogo, jogo->nomeMapa);
 				return 0;
 				// o 0 irá parar a função iniciarJogo.. irá forçar a voltar pro while do main.
 				// retornar pro menu principal
@@ -480,7 +487,7 @@ void exibirTelaEmbate(Jogo *jogo, Personagem *monstroEmbate){
 /***--------------------------------------------------------------***/
 void telaSelecionarMapa(Jogo *jogo){
 	listarMapas();
-	char nomeDoMapa[50];
+	char *nomeDoMapa = (char*) malloc(sizeof(char) * 51);
 	printf("\nDigite o nome do mapa que deseja selecionar:\n");
 	scanf(" %50s", nomeDoMapa);
 	while(buscarNomeEmArquivo(nomeDoMapa, "mapas.txt") == 0){
@@ -488,10 +495,11 @@ void telaSelecionarMapa(Jogo *jogo){
 		scanf(" %50s", nomeDoMapa);
 	}
 	carregarMapaParaOJogo(jogo, nomeDoMapa);
+	free(nomeDoMapa);
 }
 void telaCriarMapa(){
 	system(CLS);
-	char nomeDoMapa[50];
+	char *nomeDoMapa = (char*) malloc(sizeof(char) * 51);
 	printf("\nDigite o nome do mapa(ate 50 caracteres e sem espacos): ");
 	scanf(" %50s", nomeDoMapa);
 	while(buscarNomeEmArquivo(nomeDoMapa, "mapas.txt") > 0){
@@ -500,6 +508,7 @@ void telaCriarMapa(){
 	}
 	criarMapa(nomeDoMapa);
 	salvarMapaNoIndex(nomeDoMapa);
+	free(nomeDoMapa);
 }
 
 
@@ -509,9 +518,9 @@ void telaCriarMapa(){
 	*
 ***/
 void criarMapa(char* nomeDoMapa){
-	char** matriz;
+	char **mapa;
 	int dim = 0, i = 0, j = 0,num;
-	char aux[60];
+	char *aux = (char*) malloc(sizeof(char) * 61);
 	FILE* arq;
 	strcpy(aux,"mapas/");
 	strcat(aux,nomeDoMapa);
@@ -520,42 +529,45 @@ void criarMapa(char* nomeDoMapa){
 	scanf("%d", &num);
 	dim = (4*num)+5;
 	printf("Digite o mapa  %d x %d:\n",dim,dim);// pedindo o mapa
-	matriz = (char**) malloc(dim*sizeof(char*));
-	if (matriz == NULL) {
+	mapa = (char**) malloc(dim*sizeof(char*));
+	if(mapa == NULL){
+		printf("Erro mapa muito grande\n");
 		exit (1);
 	}
 	for (i = 0; i <= dim; i++) {
-		matriz[i] = (char*) malloc((dim+1)*sizeof(char));
-		if (matriz[i] == NULL) {
+		mapa[i] = (char*) malloc((dim+1)*sizeof(char));
+		if (mapa[i] == NULL) {
 			printf("Erro mapa muito grande\n");// conferindo se o mapa n foi muito grande e a memória n pode ser alocada
 			exit (1);
 		}
 	}
 	for (i = 0; i < dim; i++)// pedindo o mapa
 		for (j = 0; j < dim+1; j++)// pedindo o mapa
-			scanf("%c", &matriz[i][j]);// pedindo o mapa
+			scanf("%c", &mapa[i][j]);// pedindo o mapa
 	arq = fopen(aux,"w");
 	for (i = 0; i < dim; ++i)// transformando o limite do mapa em uma cerca
 	{
 		for (j = 0; j <= dim; ++j)// transformando o limite do mapa em uma cerca
 		{
-			if(i!=0 && i!= dim-1 && (j==0 || j==dim))matriz[i][j]='|';
-			if(i==0 && j==0)matriz[i][j]='/';// transformando o limite do mapa em uma cerca
-			else if(i==0 && j==dim)matriz[i][j]='\\';
-			else if(i==0)matriz[i][j]='-';// transformando o limite do mapa em uma cerca
-			if(i==dim-1 && j==0)matriz[i][j]='\\';
-			else if(i==dim-1 && j==dim)matriz[i][j]='/';
-			else if (i==dim-1)matriz[i][j]='-';// transformando o limite do mapa em uma cerca
+			if(i!=0 && i!= dim-1 && (j==0 || j==dim))mapa[i][j]='|';
+			if(i==0 && j==0)mapa[i][j]='/';// transformando o limite do mapa em uma cerca
+			else if(i==0 && j==dim)mapa[i][j]='\\';
+			else if(i==0)mapa[i][j]='-';// transformando o limite do mapa em uma cerca
+			if(i==dim-1 && j==0)mapa[i][j]='\\';
+			else if(i==dim-1 && j==dim)mapa[i][j]='/';
+			else if (i==dim-1)mapa[i][j]='-';// transformando o limite do mapa em uma cerca
 		}
 	}
 	fprintf(arq, "%d\n", dim);// passando a dimensão do mapa para o arquivo
 	for (i = 0; i < dim; i++) {
 		for (j = 0; j <= dim; j++){
-			fprintf(arq, "%c", matriz[i][j]);// passando mapa para o arquivo
+			fprintf(arq, "%c", mapa[i][j]);// passando mapa para o arquivo
 		}
 		fprintf(arq,"\n");
 	}
 	fclose(arq);
+	free(mapa);
+	free(aux);
 }
 /***
 	*
@@ -581,7 +593,7 @@ void salvarMapaNoIndex(char *nomeDoMapa){
 ***/
 void listarMapas(){
 	int i,mapaSelecionado;
-	char texto[50];
+	char *texto = (char*) malloc(sizeof(char) * 51);
 	FILE *file = fopen("mapas.txt", "r");
 	if(file == NULL){
 		printf("\n\tArquivo de mapas nao encontrado!\n");
@@ -595,6 +607,7 @@ void listarMapas(){
 		}
 	}
 	fclose(file);
+	free(texto);
 }
 /***
 	*
@@ -603,7 +616,7 @@ void listarMapas(){
 ***/
 void carregarMapaParaOJogo(Jogo *jogo, char *nomeArquivoMapa){
 	int i;
-	char texto[300], aux[60];
+	char *texto = (char*) malloc(sizeof(char) * 251), *aux = (char*) malloc(sizeof(char) * 61);
 	strcpy(aux, "mapas/");
 	strcat(aux, nomeArquivoMapa);
 	strcat(aux, ".txt");
@@ -612,9 +625,11 @@ void carregarMapaParaOJogo(Jogo *jogo, char *nomeArquivoMapa){
 		printf("\n\tArquivo de mapa %s nao encontrado!\n", nomeArquivoMapa);
 		exit(1);
 	}else{
+		limparPonteiroSeNaoEhNulo(jogo->nomeMapa);
 		jogo->nomeMapa = (char*) malloc(strlen(nomeArquivoMapa) * sizeof(char));
 		strcpy(jogo->nomeMapa, nomeArquivoMapa);
 		fscanf(file, "%d", &jogo->tamanho);
+		limparPonteiroSeNaoEhNulo(jogo->mapa);
 		jogo->mapa = (char**) malloc(sizeof(char*) * jogo->tamanho);
 		jogo->mapa[0] = (char*) malloc(sizeof(char) * 300);//quebra de linha após o inteiro
 		fgets(jogo->mapa[0], 300, (FILE*) file);
@@ -623,6 +638,9 @@ void carregarMapaParaOJogo(Jogo *jogo, char *nomeArquivoMapa){
 			fgets(jogo->mapa[i], 300, (FILE*) file);
 		}
 	}
+	fclose(file);
+	free(texto);
+	free(aux);
 }
 /***-----------------------------------------------------------------
 ---------------------------------------------------------------------
@@ -708,7 +726,7 @@ void salvarPersonagemNoIndex(char *nomeDoPersonagem){
 	*
 ***/
 void criarPacotePersonagens(char *nomePacotePersonagens, Personagem *heroi, Personagem *monstros){
-		char aux[67];
+		char *aux = (char*) malloc(sizeof(char) * 68);
 		int i;
 		strcpy(aux, "personagens/");
 		strcat(aux, nomePacotePersonagens);
@@ -725,6 +743,7 @@ void criarPacotePersonagens(char *nomePacotePersonagens, Personagem *heroi, Pers
 						fwrite(&monstros[i], sizeof(Personagem), 1, file);
 		}
 		fclose(file);
+		free(aux);
 }
 /***
 	*
@@ -746,6 +765,7 @@ void listarPersonagens(){
 			printf("%s", texto);
 		}
 	}
+	fclose(file);
 }
 /***
 	*
@@ -753,7 +773,7 @@ void listarPersonagens(){
 	*
 ***/
 void carregarPersonagensParaOJogo(char *nomeDoArquivo, Jogo *jogo){
-	char aux[67];
+	char *aux = (char*) malloc(sizeof(char) * 68);
 	int i;
 	strcpy(aux,"personagens/");
 	strcat(aux,nomeDoArquivo);
@@ -763,6 +783,7 @@ void carregarPersonagensParaOJogo(char *nomeDoArquivo, Jogo *jogo){
 		printf("\n\tArquivo %s nao encontrado!\n", aux);
 		exit(1);
 	}else{
+			limparPonteiroSeNaoEhNulo(jogo->nomePacotePersonagens);
 			jogo->nomePacotePersonagens = (char*) malloc(strlen(nomeDoArquivo) * sizeof(char));
 			strcpy(jogo->nomePacotePersonagens, nomeDoArquivo);
 			fread(jogo->heroi, sizeof(Personagem), 1, file);
@@ -771,6 +792,7 @@ void carregarPersonagensParaOJogo(char *nomeDoArquivo, Jogo *jogo){
 			}
 	}
 	fclose(file);
+	free(aux);
 }
 /***-----------------------------------------------------------------
 ---------------------------------------------------------------------
@@ -797,19 +819,23 @@ void carregarPersonagensParaOJogo(char *nomeDoArquivo, Jogo *jogo){
 ***/
 int buscarNomeEmArquivo(char *busca, char *nomeArquivo){
 	FILE *file = fopen(nomeArquivo, "r");
+	char *texto = (char*) malloc(sizeof(char) * 51);
 	if(file == NULL){
 			printf("\n\nTentando buscar a palavra %s no arquivo %s mas o arquivo não foi encontrado!\n", busca, nomeArquivo);
 			exit(1);
 	}else{
-			char texto[50];
 			while(!feof(file)){
 					//fgets(texto,50, (FILE*) file); isso daqui pega o \n tbm..
 					fscanf(file, " %[^\n]", texto);
 					if(strcmp(texto, busca) == 0){
+							free(texto);
+							fclose(file);
 							return 1;
 					}
 			}
 	}
+	free(texto);
+	fclose(file);
 	return 0;
 }
 /***
@@ -820,18 +846,21 @@ int buscarNomeEmArquivo(char *busca, char *nomeArquivo){
 void exibirArquivo(char *nomeDoArquivo){// função que mostra um arquivo na tela
 	FILE *file;
 	file = fopen(nomeDoArquivo, "r");
+	char *texto = malloc(sizeof(char) * 251);
 	if(file == NULL){
-		#if _WIN32 //Se estiver em um sistema windows
-				printf("\a\a");/** Dois beep's para não encontrado, só funciona no windows. **/
-				#endif
 		printf("\n\tArquivo %s nao encontrado!\n", nomeDoArquivo);
 		exit(1);
 	}else{
-			char texto[300];
 			while(!feof(file)){
-				fgets(texto, 300, (FILE*) file);
+				fgets(texto, 250, (FILE*) file);
 				printf("%s", texto);
 			}
 	}
 	fclose(file);
+	free(texto);
+}
+
+void limparPonteiroSeNaoEhNulo(void *ponteiro){
+	if(ponteiro != NULL)
+			free(ponteiro);
 }
