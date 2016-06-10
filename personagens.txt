@@ -2,3 +2,4 @@ default
 leagueoflegends
 Ikkaku
 cin
+herois
