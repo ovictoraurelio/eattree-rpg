@@ -16,6 +16,7 @@ Eat Tree RPG é um jogo criado por alunos da turma if669ec, para a cadeira de in
 main.c  Arquivo principal onde acontece toda a mágica do jogo.
 mapas.txt Arquivo que lista os mapas que já foram salvos.
 personagens.txt Arquivo que lista os personagens que já foram salvos.
+getch.h código util para utilizar a função getch no linux.
 mapas/  Pasta com arquivos que serão listados como mapas para o jogo.
 personagens/ Pasta com arquivos binários que serão listados como arquivos de personagens para o jogo.
 _modelo/ Pasta com alguns arquivos enviados pelos monitores.

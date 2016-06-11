@@ -18,7 +18,7 @@
 #include <time.h>
 #include <ctype.h> // toupper
 #ifdef __unix__
-	#include <curses.h>
+	#include "getch.h"
 	#define CLS "clear"
 #elif _WIN32
 	#define CLS "cls"

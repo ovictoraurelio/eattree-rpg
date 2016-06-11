@@ -18,26 +18,26 @@
 #include <string.h> // strcmp, stract, strcpy
 #include <time.h>
 #include <ctype.h> // toupper
+#define CTRL_C 3
+#define KEY_H 72
 #ifdef __unix__
-	#include <curses.h>
+	#include <unistd.h>
+	#include "getch.h"
 	#define CLS "clear"
-#elif _WIN32
+	#define KEY_ENTER 10	
+	void delay( unsigned long ms ){
+	    usleep( ms * 1000 );//micro segundos
+	}
+#elif defined(__WIN32__) || defined(_WIN32) || defined(WIN32) || defined(__WINDOWS__) || defined(__TOS_WIN__)
 	#define CLS "cls"
 	#include <conio.h>
+	#include <windows.h>
+	#define KEY_ENTER 13	
+  	void delay( unsigned long ms ){
+    	Sleep( ms );
+	}
 #endif
 
-
-#if defined(__WIN32__) || defined(_WIN32) || defined(WIN32) || defined(__WINDOWS__) || defined(__TOS_WIN__)
-  #include <windows.h>
-  void delay( unsigned long ms ){
-    Sleep( ms );
-  }
-#else  /* presume POSIX */
-  #include <unistd.h>
-  void delay( unsigned long ms ){
-    usleep( ms * 1000 );//micro segundos
-  }
-#endif
 
 
 typedef struct{
@@ -48,6 +48,7 @@ typedef struct{
 }Personagem;
 
 typedef struct{
+	int continuarExecutandoJogo;
 	int pontuacao;
 	int tamanho; // Tamanho de  Linhas x Colunas (Nossa matriz será sempre quadrada)
 	char *nomePacotePersonagens;
@@ -62,19 +63,18 @@ typedef struct{
 	*	Declarando cabeçalhos das funções
 	*
 ***/
-
-
-void iniciarJogo(Jogo *atual);
-
 Personagem* buscarMonstroEmbate(Jogo *jogo);
-void carregarMapaParaOJogo(Jogo *jogo, char *nomeArquivoMapa);
-void carregarPersonagensParaOJogo(Jogo *jogo, char *nomeDoArquivo);
+void carregarMapaParaOJogo(Jogo *jogo);
+void carregarPersonagensParaOJogo(Jogo *jogo);
 void desenharMapa(Jogo *jogo, int *rodada);
 void definirNovaPosicaoNoMapa(int teclaPressionada, int *x, int *y, int *tamanhoMapa, int vidaPersonagem);
 void exibirMenu(char *arquivoDeMenu, char *ultimo, char *opcao);
 void exibirTelaEmbate(Jogo *jogo, Personagem *monstroEmbate);
+void iniciarJogo(Jogo *atual);
+int iniciarEmbate(Jogo *atual);
 int move(int w, int x, int y, int z, int e);
 void movimentarPersonagem(int x, int y, Personagem* personagem, Jogo *jogo, int tamanhoMapa, int monstro);
+char getchPersonalizado();
 char pegarOpcaoMenu(char *nomeArquivoDeMenu);
 void posicionarPersonagem(Personagem *personagem, int x, int y);
 void telaCriarMapa();
@@ -82,7 +82,6 @@ void telaCriarPacoteDePersonagens(Jogo *jogo);
 void telaSelecionarMapa(Jogo *jogo);
 void telaSelecionarPacoteDePersonagens(Jogo *jogo);
 void telaPreJogo(Jogo *jogo);
-int iniciarEmbate(Jogo *jogo);
 int validaMovimento (int x, int y, int tamanho, int monstro, Jogo* jogo);
 void sairDoJogo(Jogo *jogo);
 // PROVAVEL BIBLIOTECA - FUNÇÕES DE ARQUIVO:
@@ -96,19 +95,20 @@ void listarMapas();
 void salvarMapaNoIndex(char *nomeDoMapa);
 void salvarPersonagemNoIndex(char *nomeDoPersonagem);
 
-
 int main(int argc, char const *argv[]){
 	Jogo *jogoAtual = (Jogo*) calloc(1,sizeof(Jogo));
 	jogoAtual->heroi = (Personagem*) calloc(1,sizeof(Personagem));
 	jogoAtual->monstros = (Personagem*) calloc(4,sizeof(Personagem));
-	int exibirBemVindo=1;
-	while(1){
+	jogoAtual->continuarExecutandoJogo=1;
+	jogoAtual->nomePacotePersonagens = (char*) malloc(sizeof(char) * 77);	
+	jogoAtual->nomeMapa = (char*) malloc(sizeof(char) * 61);
+
+	while(jogoAtual->continuarExecutandoJogo > 0){
 		system(CLS);
-		system("color 0f");
-		if(exibirBemVindo){
+		if(jogoAtual->continuarExecutandoJogo == 1){
+			jogoAtual->continuarExecutandoJogo++;
 			exibirArquivo("templates/bem_vindo");
-			getch();
-			exibirBemVindo = 0;
+			getchPersonalizado();
 		}
 		switch(pegarOpcaoMenu("templates/tela_inicial")){// De acordo com a opção que o menu retornar
 			case 'W': //Caso seja selecionada a primeira opção do menu
@@ -124,6 +124,7 @@ int main(int argc, char const *argv[]){
 							case 'S': //CRIAR UM MAPA
 								telaCriarMapa(jogoAtual);
 							break;
+							default: break;
 						};
 					break;
 					case 'S': // CONFIGURAÇÕES DE PERSONAGENS
@@ -134,55 +135,64 @@ int main(int argc, char const *argv[]){
 							case 'S': //CRIAR UM PERSONAGEM
 								telaCriarPacoteDePersonagens(jogoAtual);
 							break;
+							default: break;
 						};
 					break;
-				}
+					default: break;
+				};
 			break;
-			case 72:
-				system(CLS);
-				system("color 0e");
-				exibirArquivo("templates/help");
-				printf("\n");
-				getch();
+			case CTRL_C:
+				jogoAtual->continuarExecutandoJogo = 0;
 			break;
+			default: break;
 		};
 	}
 	sairDoJogo(jogoAtual);
 	return 0;
 }
+
+
+/***-----------------------------------------------------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+-----------------------
+-----------------------
+-----------------------                 -MENUS-
+-----------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+/***--------------------------------------------------------------***/
 /***
 	*
-	*	Esta retorna qual a opção escolhida pelo usuário no menu.
-	*
+	*	1 - pegarOpcaoMenu	#Esta retorna qual a opção escolhida pelo usuário no menu.
+	*	2 - exibirMenu		#Esta função exibe o menu e de acordo com a atual posição do cursor
+	*   	 				 ela coloca '>' em cima ou em baixo do texto.
+	*	
 ***/
 char pegarOpcaoMenu(char *nomeArquivoDeMenu){
 	char ultimo='S', opcao='W';
-	do{
+	do{		
+		if(opcao == KEY_H){ // garantir que após a tela de ajuda, ele redesenha o menu.
+			opcao = ultimo == 'W' ? 'S' : 'W';				
+		}
 		if(ultimo != opcao && (opcao == 'W' || opcao == 'S')){// Só vai redezenhar se ele realmente alternar entre as posições...
 			system(CLS);
 			exibirMenu(nomeArquivoDeMenu, &ultimo, &opcao);
 		}
-	}while((opcao = toupper(getch())) && opcao != 13 && opcao != 3 && opcao != 'H');
-	// OPCAO == 3 CTRL +c
-	// OPCAO == 13 ENTER
-
-	//Casos especiais, após o fim do menu, para sair do jogo ou para voltar a tela principal.
-	if(opcao == 3 && (strcmp(nomeArquivoDeMenu,"templates/tela_inicial") == 0 || strcmp(nomeArquivoDeMenu, "templates/game_over") == 0)){ //Ctrl+C pressionado
-		printf("Jogo finalizado!\n");
-		exit(1);
-	}else if(opcao == 3){
-		return 0;//vai retornar um case inválido (diferente de w, e de s).. fará com que retorne para o menu principal.
-	}else if(opcao == 'H'){
-		ultimo = 'H';
+	}while((opcao = getchPersonalizado()) && opcao != KEY_ENTER && opcao != CTRL_C);	
+	if(opcao == CTRL_C){
+		return CTRL_C;//vai retornar um case inválido (diferente de w, e de s).. fará com que retorne para o menu principal.
 	}
 	return ultimo;
 }
-/***
-	*
-	*	Esta função exibe o menu e de acordo com a atual posição do cursor
-	*   ela coloca '>' em cima ou em baixo do texto.
-	*
-***/
 void exibirMenu(char *nomeArquivoDeMenu, char *ultimo, char *opcao){
 	int i;
 	char *texto, **palavras;
@@ -222,133 +232,51 @@ void exibirMenu(char *nomeArquivoDeMenu, char *ultimo, char *opcao){
 	free(palavras);
 	fclose(file);
 }
+
+/***-----------------------------------------------------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+-----------------------
+-----------------------
+-----------------------                 -JOGO-
+-----------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+/***--------------------------------------------------------------***/
 /***
 	*
-	*	Esta função recebe um texto como parametro,
-	* 	busca uma determinada palavra e coloca um caracter duas posições antes da palavra.
+	*	buscarMonstroEmbate
+	*	definirNovaPosicaoNoMapa
+	*	desenharMapa				#Função que modifica o mapa a cada rodada. A cada movimento do heroi, ela reseta o mapa e produz um novo com as novas
+									 informações sobre a sua posição, posição dos monstros e das árvores.
+	*	move 						#Função que determina o movimento pseudo-aleatório dos monstros
+	*	movimentarPersonagem		#Função que valida a nova posição do monstro dada pela função move
+	* 	range
+	*	posicionarPersonagem
+	*	telaPreJogo
+	*	exibirTelaEmbate
+	*	iniciarJogo
+	*	iniciarEmbate
+	*
 	*
 ***/
-void alterarCaracterPrePalavra(char *texto, char *busca, char c){
-	char *ptr, *aux;
-	aux = strstr(texto,busca); // Procura por uma palavra no texto e retorna o endereço da posição do caracter 0 desta palavra.
-	if(aux != NULL){
-		ptr = aux-2; // Volta 2 caracteres antes do caracter de inicio da palavra.
-		*ptr = c;// Substitui o conteúdo pelo caracter C que foi passado como parametro
+Personagem* buscarMonstroEmbate(Jogo *jogo){
+	int i;
+	for(i=0; i<4; i++){
+		if(jogo->monstros[i].x == jogo->heroi->x && jogo->monstros[i].y == jogo->heroi->y){
+			return &jogo->monstros[i];
+		}
 	}
+	return NULL;
 }
-/***
-	*
-	*	Esta função irá iniciar um jogo novo.
-	*
-***/
-void telaPreJogo(Jogo *jogo){
-		system(CLS);
-		if(strcmp(jogo->heroi->nome, "") == 0){ // Heroi sempre vai estar alocado.. Porém se tivermos carregado um pacote de personagens teremos um nome para o heroi
-				carregarPersonagensParaOJogo(jogo, "default");
-				jogo->nomePacotePersonagens = "default";
-		}
-		if(jogo->mapa == NULL){
-				carregarMapaParaOJogo(jogo, "default");
-				jogo->nomeMapa = "default";
-		}
-		if(jogo->heroi != NULL && jogo->mapa != NULL && jogo->monstros != NULL){
-				exibirArquivo("templates/jogo_carregado");
-				printf("\nMapa selecionado: %s",jogo->nomeMapa);
-				printf("\nPacote de personagens selecionado: %s",jogo->nomePacotePersonagens);
-				delay(2000);// Espera 2 segundos
-				iniciarJogo(jogo);
-		}else{
-				printf("\nProblemas ao carregar o jogo!");
-				exit(1);
-		}
-}
-void iniciarJogo(Jogo *jogo){
-	 	char teclaPressionada;
-		int rodada=0, metadeTamanho = jogo->tamanho/2, i = 0, novoX, novoY, movimento, continuarAposEmbate = 1;
-		posicionarPersonagem(jogo->heroi, metadeTamanho, metadeTamanho);
-		posicionarPersonagem(&jogo->monstros[0], metadeTamanho/2, metadeTamanho/2);
-		posicionarPersonagem(&jogo->monstros[1], metadeTamanho/2 + metadeTamanho, metadeTamanho/2);
-		posicionarPersonagem(&jogo->monstros[2], metadeTamanho/2, metadeTamanho/2 + metadeTamanho);
-		posicionarPersonagem(&jogo->monstros[3], metadeTamanho/2 + metadeTamanho, metadeTamanho/2 + metadeTamanho);
-		system(CLS);
-		desenharMapa(jogo, &rodada);
-		while(continuarAposEmbate && jogo->heroi->vida > 0 && (jogo->monstros[0].vida > 0 || jogo->monstros[1].vida > 0  || jogo->monstros[2].vida > 0 || jogo->monstros[3].vida > 0) && teclaPressionada != 3){
-			while(continuarAposEmbate && ( teclaPressionada = toupper(getch()) ) && (teclaPressionada=='A' || teclaPressionada=='S' || teclaPressionada=='W' || teclaPressionada=='D') && teclaPressionada != 3){
-				if(jogo->pontuacao > 0){
-					jogo->pontuacao--;
-				}
-				novoX = jogo->heroi->x;
-				novoY = jogo->heroi->y;
-				definirNovaPosicaoNoMapa(teclaPressionada, &novoX, &novoY, &jogo->tamanho, jogo->heroi->vida);
-				movimentarPersonagem(novoX, novoY, jogo->heroi, jogo, jogo->tamanho, 0);
-				if(jogo->mapa[novoY][novoX] == '*'){
-					jogo->pontuacao+=20;
-					jogo->mapa[novoY][novoX] = ' ';
-				}else if(buscarMonstroEmbate(jogo) != NULL){
-					continuarAposEmbate = iniciarEmbate(jogo);
-				}
-				for (i = 0; i < 4; i++){
-					if(jogo->monstros[i].vida > 0){
-						movimento = move(jogo->heroi->x,jogo->heroi->y,jogo->monstros[i].x,jogo->monstros[i].y,rodada);
-						novoX = jogo->monstros[i].x;
-						novoY = jogo->monstros[i].y;
-						definirNovaPosicaoNoMapa(movimento, &novoX, &novoY, &jogo->tamanho, jogo->monstros[i].vida);
-						movimentarPersonagem(novoX, novoY, &jogo->monstros[i], jogo, jogo->tamanho, i+1);
-					}
-				}
-				if(continuarAposEmbate){ // para não desenhar após reiniciar o jogo..
-					rodada++;
-					system(CLS);
-					desenharMapa(jogo, &rodada);
-				}
-			}
-		}
-}
-/*
-	*
-	*  Função que modifica o mapa a cada rodada. A cada movimento do heroi, ela reseta o mapa e produz um novo com as novas
-	*  informações sobre a sua posição, posição dos monstros e das árvores.
-	*
-*/
-void desenharMapa(Jogo *jogo, int *rodada){
-	int i,j,k,imprimirConteudoDoMapa;
-	for(i=0; i<jogo->tamanho; i++){
-		for(j=0; j<=jogo->tamanho; j++){
-				imprimirConteudoDoMapa=1;
-				if(jogo->heroi->x == j && jogo->heroi->y == i){
-						printf("H");
-						imprimirConteudoDoMapa=0;
-				}
-				for(k=0; k<4; k++){
-						if(jogo->monstros[k].x == j && jogo->monstros[k].y == i){
-							printf("M");//representacao alerta!!!
-							imprimirConteudoDoMapa=0;
-						}
-				}
-				if(imprimirConteudoDoMapa){
-						printf("%c",jogo->mapa[i][j]);
-				}
-		}
-		printf("\n");
-	}
-	printf("\nRodada: %d\nPontuacao: %d\nVida: %d", *rodada,jogo->pontuacao, jogo->heroi->vida);
-}
-/*
-	*
-	* Função que determina o movimento pseudo-aleatório dos monstros
-	*
-*/
-int move(int w, int x, int y, int z, int e){
-	if (w == 0 || x == 0 || y == 0 || z == 0 || e == 0)
-		return 0;
-	else
-		return ((((w+x+e)*y)/z) + move(w-1,x-1,y-1,z-1,e))%5;
-}
-/*
-	*
-	* Função que valida a nova posição do monstro dada pela função move
-	*
-*/
 void definirNovaPosicaoNoMapa(int teclaPressionada, int *x, int *y, int *tamanhoMapa, int vidaPersonagem){
 	if(vidaPersonagem > 0){// O PERSONAGEM SÓ ANDA SE A VIDA FOR MAIOR QUE ZERO. Isso possibilita que quando eu alocar x = -1 e y = -1 ele fico no "limbo" para sempre
 		switch(teclaPressionada){
@@ -378,6 +306,35 @@ void definirNovaPosicaoNoMapa(int teclaPressionada, int *x, int *y, int *tamanho
 		}
 	}
 }
+void desenharMapa(Jogo *jogo, int *rodada){
+	int i,j,k,imprimirConteudoDoMapa;
+	for(i=0; i<jogo->tamanho; i++){
+		for(j=0; j<=jogo->tamanho; j++){
+				imprimirConteudoDoMapa=1;
+				if(jogo->heroi->x == j && jogo->heroi->y == i){
+						printf("H");
+						imprimirConteudoDoMapa=0;
+				}
+				for(k=0; k<4; k++){
+						if(jogo->monstros[k].x == j && jogo->monstros[k].y == i){
+							printf("M");//representacao alerta!!!
+							imprimirConteudoDoMapa=0;
+						}
+				}
+				if(imprimirConteudoDoMapa){
+						printf("%c",jogo->mapa[i][j]);
+				}
+		}
+		printf("\n");
+	}
+	printf("\nRodada: %d\nPontuacao: %d\nVida: %d", *rodada,jogo->pontuacao, jogo->heroi->vida);
+}
+int move(int w, int x, int y, int z, int e){
+	if (w == 0 || x == 0 || y == 0 || z == 0 || e == 0)
+		return 0;
+	else
+		return ((((w+x+e)*y)/z) + move(w-1,x-1,y-1,z-1,e))%5;
+}
 void movimentarPersonagem(int x, int y, Personagem* personagem, Jogo* jogo, int tamanhoMapa, int monstro){
 	int podeMovimentar=0;
 	if(monstro == 0)// Monstro 0 é o heroi!
@@ -395,15 +352,84 @@ void movimentarPersonagem(int x, int y, Personagem* personagem, Jogo* jogo, int 
 		personagem->y = y;
 	}
 }
-void posicionarPersonagem(Personagem *personagem, int x, int y){
-	personagem->x = x;
-	personagem->y = y;
-}
 int range(int w, int x, int y, int z){
 	if (w == 0 || x == 0|| y == 0|| z == 0)
 		return 0;
 	else
 		return (((w + x)*y/(z + 1)) + range(z-10,w-10,x-10,y-10))%30;
+}
+void posicionarPersonagem(Personagem *personagem, int x, int y){
+	personagem->x = x;
+	personagem->y = y;
+}
+
+void telaPreJogo(Jogo *jogo){
+		system(CLS);
+		if(strcmp(jogo->heroi->nome, "") == 0){ // Heroi sempre vai estar alocado.. Porém se tivermos carregado um pacote de personagens teremos um nome para o heroi
+				jogo->nomePacotePersonagens = "default";
+				carregarPersonagensParaOJogo(jogo);
+		}
+		if(jogo->mapa == NULL){
+				jogo->nomeMapa = "default";
+				carregarMapaParaOJogo(jogo);
+		}
+		if(jogo->heroi != NULL && jogo->mapa != NULL && jogo->monstros != NULL){
+				exibirArquivo("templates/jogo_carregado");
+				printf("\nMapa selecionado: %s",jogo->nomeMapa);
+				printf("\nPacote de personagens selecionado: %s\n",jogo->nomePacotePersonagens);
+				delay(2000);// Espera 2 segundos
+				iniciarJogo(jogo);
+		}else{
+				printf("\nProblemas ao carregar o jogo!");
+				exit(1);
+		}
+}
+void exibirTelaEmbate(Jogo *jogo, Personagem *monstroEmbate){
+	system(CLS);
+	exibirArquivo("templates/fight_frame");
+	printf("Heroi: %s\nAtaque: %d\nDefesa: %d\nVida: %d\n\n\nMonstro: %s\nAtaque: %d\nDefesa: %d\nVida: %d",jogo->heroi->nome, jogo->heroi->ataque, jogo->heroi->defesa, jogo->heroi->vida, monstroEmbate->nome,monstroEmbate->ataque,monstroEmbate->defesa, monstroEmbate->vida);
+}
+void iniciarJogo(Jogo *jogo){
+	 	char teclaPressionada;
+		int rodada=0, metadeTamanho = jogo->tamanho/2, i = 0, novoX, novoY, movimento, continuarAposEmbate = 1;
+		posicionarPersonagem(jogo->heroi, metadeTamanho, metadeTamanho);
+		posicionarPersonagem(&jogo->monstros[0], metadeTamanho/2, metadeTamanho/2);
+		posicionarPersonagem(&jogo->monstros[1], metadeTamanho/2 + metadeTamanho, metadeTamanho/2);
+		posicionarPersonagem(&jogo->monstros[2], metadeTamanho/2, metadeTamanho/2 + metadeTamanho);
+		posicionarPersonagem(&jogo->monstros[3], metadeTamanho/2 + metadeTamanho, metadeTamanho/2 + metadeTamanho);
+		system(CLS);
+		desenharMapa(jogo, &rodada);
+		while(jogo->continuarExecutandoJogo > 0 && continuarAposEmbate && jogo->heroi->vida > 0 && (jogo->monstros[0].vida > 0 || jogo->monstros[1].vida > 0  || jogo->monstros[2].vida > 0 || jogo->monstros[3].vida > 0) && teclaPressionada != CTRL_C){
+			while(jogo->continuarExecutandoJogo > 0 && continuarAposEmbate && ( teclaPressionada = getchPersonalizado() ) && (teclaPressionada=='A' || teclaPressionada=='S' || teclaPressionada=='W' || teclaPressionada=='D') && teclaPressionada != CTRL_C){
+				if(jogo->pontuacao > 0){
+					jogo->pontuacao--;
+				}
+				novoX = jogo->heroi->x;
+				novoY = jogo->heroi->y;
+				definirNovaPosicaoNoMapa(teclaPressionada, &novoX, &novoY, &jogo->tamanho, jogo->heroi->vida);
+				movimentarPersonagem(novoX, novoY, jogo->heroi, jogo, jogo->tamanho, 0);
+				if(jogo->mapa[novoY][novoX] == '*'){
+					jogo->pontuacao+=20;
+					jogo->mapa[novoY][novoX] = ' ';
+				}else if(buscarMonstroEmbate(jogo) != NULL){
+					continuarAposEmbate = iniciarEmbate(jogo);
+				}
+				for (i = 0; i < 4; i++){
+					if(jogo->monstros[i].vida > 0){
+						movimento = move(jogo->heroi->x,jogo->heroi->y,jogo->monstros[i].x,jogo->monstros[i].y,rodada);
+						novoX = jogo->monstros[i].x;
+						novoY = jogo->monstros[i].y;
+						definirNovaPosicaoNoMapa(movimento, &novoX, &novoY, &jogo->tamanho, jogo->monstros[i].vida);
+						movimentarPersonagem(novoX, novoY, &jogo->monstros[i], jogo, jogo->tamanho, i+1);
+					}
+				}
+				if(continuarAposEmbate){ // para não desenhar após reiniciar o jogo..
+					rodada++;
+					system(CLS);
+					desenharMapa(jogo, &rodada);
+				}
+			}
+		}
 }
 int iniciarEmbate(Jogo *jogo){
 	int i, jogada, rangeAtaqueHeroi;
@@ -436,14 +462,14 @@ int iniciarEmbate(Jogo *jogo){
 		switch(pegarOpcaoMenu("templates/game_over")){
 			case 'W':
 				jogo->pontuacao=0;
-				carregarPersonagensParaOJogo(jogo, jogo->nomePacotePersonagens);
-				carregarMapaParaOJogo(jogo, jogo->nomeMapa);
+				carregarPersonagensParaOJogo(jogo);
+				carregarMapaParaOJogo(jogo);
 				return 0;
 				// o 0 irá parar a função iniciarJogo.. irá forçar a voltar pro while do main.
 				// retornar pro menu principal
 			break;
 			case 'S':
-				sairDoJogo(jogo);
+				jogo->continuarExecutandoJogo = 0;
 			break;
 			default: break;
 		}
@@ -454,20 +480,6 @@ int iniciarEmbate(Jogo *jogo){
 		return 1;
 	}
 }
-Personagem* buscarMonstroEmbate(Jogo *jogo){
-	int i;
-	for(i=0; i<4; i++){
-		if(jogo->monstros[i].x == jogo->heroi->x && jogo->monstros[i].y == jogo->heroi->y){
-			return &jogo->monstros[i];
-		}
-	}
-	return NULL;
-}
-void exibirTelaEmbate(Jogo *jogo, Personagem *monstroEmbate){
-	system(CLS);
-	exibirArquivo("templates/fight_frame");
-	printf("Heroi: %s\nAtaque: %d\nDefesa: %d\nVida: %d\n\n\nMonstro: %s\nAtaque: %d\nDefesa: %d\nVida: %d",jogo->heroi->nome, jogo->heroi->ataque, jogo->heroi->defesa, jogo->heroi->vida, monstroEmbate->nome,monstroEmbate->ataque,monstroEmbate->defesa, monstroEmbate->vida);
-}
 /***-----------------------------------------------------------------
 ---------------------------------------------------------------------
 ---------------------------------------------------------------------
@@ -477,7 +489,7 @@ void exibirTelaEmbate(Jogo *jogo, Personagem *monstroEmbate){
 ---------------------------------------------------------------------
 -----------------------
 -----------------------
------------------------                 MAPAS
+-----------------------                 -MAPAS-
 -----------------------
 ---------------------------------------------------------------------
 ---------------------------------------------------------------------
@@ -486,17 +498,25 @@ void exibirTelaEmbate(Jogo *jogo, Personagem *monstroEmbate){
 ---------------------------------------------------------------------
 ---------------------------------------------------------------------
 /***--------------------------------------------------------------***/
+/***
+	*
+	*	1 - telaSelecionarMapa
+	*	2 - telaCriarMapa
+	*	3 - criarMapa 						#Esta função cria um novo mapa segundo o jogador
+	*	4 - salvarMapaNoIndex 				#Essa função salva o nome do mapa no arquivo  mapas.txt nosso indice de mapas
+	*	5 - listarMapas  					#Essa função carrega os mapas salvos. Apartir do arquivo mapas.txt
+	*	6 - carregarMapaParaOJogo			#Essa função carrega o mapa do arquivo de texto.
+	*
+***/
 void telaSelecionarMapa(Jogo *jogo){
-	listarMapas();
-	char *nomeDoMapa = (char*) malloc(sizeof(char) * 51);
+	listarMapas();	
 	printf("\nDigite o nome do mapa que deseja selecionar:\n");
-	scanf(" %50s", nomeDoMapa);
-	while(buscarNomeEmArquivo(nomeDoMapa, "mapas.txt") == 0){
+	scanf(" %50s", jogo->nomeMapa);
+	while(buscarNomeEmArquivo(jogo->nomeMapa, "mapas.txt") == 0){
 		printf("\nMapa informado nao esta na lista! Digite o nome do mapa que deseja selecionar:\n");
-		scanf(" %50s", nomeDoMapa);
+		scanf(" %50s", jogo->nomeMapa);
 	}
-	carregarMapaParaOJogo(jogo, nomeDoMapa);
-	free(nomeDoMapa);
+	carregarMapaParaOJogo(jogo);
 }
 void telaCriarMapa(){
 	system(CLS);
@@ -511,13 +531,6 @@ void telaCriarMapa(){
 	salvarMapaNoIndex(nomeDoMapa);
 	free(nomeDoMapa);
 }
-
-
-/***
-	*
-	*	Esta função cria um novo mapa segundo o jogador
-	*
-***/
 void criarMapa(char* nomeDoMapa){
 	char **mapa;
 	int dim = 0, i = 0, j = 0,num;
@@ -570,11 +583,6 @@ void criarMapa(char* nomeDoMapa){
 	free(mapa);
 	free(aux);
 }
-/***
-	*
-	* 	Essa função salva o nome do mapa no arquivo  mapas.txt nosso indice de mapas
-	*
-***/
 void salvarMapaNoIndex(char *nomeDoMapa){
 	FILE *file = fopen("mapas.txt", "a");
 	if(file == NULL){
@@ -587,11 +595,6 @@ void salvarMapaNoIndex(char *nomeDoMapa){
 	}
 	fclose(file);
 }
-/***
-	*
-	* 	Essa função carrega os mapas salvos. Apartir do arquivo mapas.txt
-	*
-***/
 void listarMapas(){
 	int i,mapaSelecionado;
 	char *texto = (char*) malloc(sizeof(char) * 51);
@@ -610,26 +613,17 @@ void listarMapas(){
 	fclose(file);
 	free(texto);
 }
-/***
-	*
-	* 	Essa função carrega o mapa do arquivo de texto.
-	*
-***/
-void carregarMapaParaOJogo(Jogo *jogo, char *nomeArquivoMapa){
+void carregarMapaParaOJogo(Jogo *jogo){
 	int i;
 	char *texto = (char*) malloc(sizeof(char) * 251), *aux = (char*) malloc(sizeof(char) * 61);
 	strcpy(aux, "mapas/");
-	strcat(aux, nomeArquivoMapa);
+	strcat(aux, jogo->nomeMapa);
 	strcat(aux, ".txt");
 	FILE *file = fopen(aux, "r");
 	if(file == NULL){
-		printf("\n\tArquivo de mapa %s nao encontrado!\n", nomeArquivoMapa);
+		printf("\n\tArquivo de mapa %s nao encontrado!\n", aux);
 		exit(1);
 	}else{
-		if(jogo->nomeMapa == NULL){
-				jogo->nomeMapa = (char*) malloc(strlen(nomeArquivoMapa) * sizeof(char));
-		}
-		strcpy(jogo->nomeMapa, nomeArquivoMapa);
 		fscanf(file, "%d", &jogo->tamanho);
 		if(jogo->mapa != NULL)
 			free(jogo->mapa);
@@ -645,6 +639,7 @@ void carregarMapaParaOJogo(Jogo *jogo, char *nomeArquivoMapa){
 	free(texto);
 	free(aux);
 }
+
 /***-----------------------------------------------------------------
 ---------------------------------------------------------------------
 ---------------------------------------------------------------------
@@ -654,7 +649,7 @@ void carregarMapaParaOJogo(Jogo *jogo, char *nomeArquivoMapa){
 ---------------------------------------------------------------------
 -----------------------
 -----------------------
------------------------                 PERSONAGENS
+-----------------------                 -PERSONAGENS-
 -----------------------
 ---------------------------------------------------------------------
 ---------------------------------------------------------------------
@@ -663,17 +658,26 @@ void carregarMapaParaOJogo(Jogo *jogo, char *nomeArquivoMapa){
 ---------------------------------------------------------------------
 ---------------------------------------------------------------------
 -----------------------------------------------------------------***/
+/***
+	*
+	*	1 - telaSelecionarPacoteDePersonagens
+	*	2 - telaCriarPacoteDePersonagens
+	*	3 - salvarPersonagemNoIndex
+	*	4 - criarPacotePersonagens
+	*	5 - listarPersonagens
+	*	6 - carregarPersonagensParaOJogo
+	*
+***/
 void telaSelecionarPacoteDePersonagens(Jogo *jogo){
 		system(CLS);
-		listarPersonagens();
-		char nomeDoPacoteDePersonagens[50];
+		listarPersonagens();		
 		printf("\n\nDigite o nome do personagem que deseja selecionar:\n");
-		scanf(" %50s", nomeDoPacoteDePersonagens);
-		while(buscarNomeEmArquivo(nomeDoPacoteDePersonagens, "personagens.txt") == 0){
+		scanf(" %50s", jogo->nomePacotePersonagens);
+		while(buscarNomeEmArquivo(jogo->nomePacotePersonagens, "personagens.txt") == 0){
 			printf("\nNome informado nao esta na lista!\nDigite o nome do personagem que deseja selecionar:\n");
-			scanf(" %50s", nomeDoPacoteDePersonagens);
+			scanf(" %50s", jogo->nomePacotePersonagens);
 		}
-		carregarPersonagensParaOJogo(jogo, nomeDoPacoteDePersonagens);
+		carregarPersonagensParaOJogo(jogo);
 }
 void telaCriarPacoteDePersonagens(Jogo *jogo){
 		int i;
@@ -707,11 +711,6 @@ void telaCriarPacoteDePersonagens(Jogo *jogo){
 		salvarPersonagemNoIndex(nomePacotePersonagens);
 		criarPacotePersonagens(nomePacotePersonagens, jogo->heroi, jogo->monstros);
 }
-/***
-	*
-	* 	Essa função salva o nome do pacote de personagens em personagens.txt nosso indice de personagens.
-	*
-***/
 void salvarPersonagemNoIndex(char *nomeDoPersonagem){
 	FILE *file = fopen("personagens.txt", "a");
 	if(file == NULL){
@@ -723,13 +722,8 @@ void salvarPersonagemNoIndex(char *nomeDoPersonagem){
 	}
 	fclose(file);
 }
-/***
-	*
-	* 	Essa função salva o nome do pacote de personagens em personagens salvos.
-	*
-***/
 void criarPacotePersonagens(char *nomePacotePersonagens, Personagem *heroi, Personagem *monstros){
-		char *aux = (char*) malloc(sizeof(char) * 68);
+		char *aux = (char*) malloc(sizeof(char) * 77);
 		int i;
 		strcpy(aux, "personagens/");
 		strcat(aux, nomePacotePersonagens);
@@ -748,11 +742,6 @@ void criarPacotePersonagens(char *nomePacotePersonagens, Personagem *heroi, Pers
 		fclose(file);
 		free(aux);
 }
-/***
-	*
-	* 	Essa função carrega os personagens do arquivo binário.
-	*
-***/
 void listarPersonagens(){
 	int i,personagemSelecionado;
 	char texto[50];
@@ -770,26 +759,17 @@ void listarPersonagens(){
 	}
 	fclose(file);
 }
-/***
-	*
-	* 	Essa função carrega os personagens do arquivo binário.
-	*
-***/
-void carregarPersonagensParaOJogo(Jogo *jogo, char *nomeDoArquivo){
+void carregarPersonagensParaOJogo(Jogo *jogo){
 	char *aux = (char*) malloc(sizeof(char) * 68);
 	int i;
 	strcpy(aux,"personagens/");
-	strcat(aux,nomeDoArquivo);
+	strcat(aux,jogo->nomePacotePersonagens);
 	strcat(aux,".bin");
 	FILE *file = fopen(aux, "rb");
 	if(file == NULL){
 		printf("\n\tArquivo %s nao encontrado!\n", aux);
 		exit(1);
-	}else{
-			if(jogo->nomePacotePersonagens == NULL){
-					jogo->nomePacotePersonagens = (char*) malloc(strlen(nomeDoArquivo) * sizeof(char));
-			}
-			strcpy(jogo->nomePacotePersonagens, nomeDoArquivo);
+	}else{			
 			fread(jogo->heroi, sizeof(Personagem), 1, file);
 			for(i=0; i<4; i++){
 				fread(&jogo->monstros[i], sizeof(Personagem), 1, file);
@@ -798,6 +778,7 @@ void carregarPersonagensParaOJogo(Jogo *jogo, char *nomeDoArquivo){
 	fclose(file);
 	free(aux);
 }
+
 /***-----------------------------------------------------------------
 ---------------------------------------------------------------------
 ---------------------------------------------------------------------
@@ -807,7 +788,7 @@ void carregarPersonagensParaOJogo(Jogo *jogo, char *nomeDoArquivo){
 ---------------------------------------------------------------------
 -----------------------
 -----------------------
------------------------                 ÚTEIS
+-----------------------                 -UTEIS-
 -----------------------
 ---------------------------------------------------------------------
 ---------------------------------------------------------------------
@@ -816,6 +797,20 @@ void carregarPersonagensParaOJogo(Jogo *jogo, char *nomeDoArquivo){
 ---------------------------------------------------------------------
 ---------------------------------------------------------------------
 -----------------------------------------------------------------***/
+/***
+	*
+	*	Esta função recebe um texto como parametro,
+	* 	busca uma determinada palavra e coloca um caracter duas posições antes da palavra.
+	*
+***/
+void alterarCaracterPrePalavra(char *texto, char *busca, char c){
+	char *ptr, *aux;
+	aux = strstr(texto,busca); // Procura por uma palavra no texto e retorna o endereço da posição do caracter 0 desta palavra.
+	if(aux != NULL){
+		ptr = aux-2; // Volta 2 caracteres antes do caracter de inicio da palavra.
+		*ptr = c;// Substitui o conteúdo pelo caracter C que foi passado como parametro
+	}
+}
 /***
 	*
 	* 	Essa função pesquisa por um nome de até 50 caracteres em algum arquivo que armazene strings de até 50 caracteres, linha por linha..
@@ -828,8 +823,7 @@ int buscarNomeEmArquivo(char *busca, char *nomeArquivo){
 			printf("\n\nTentando buscar a palavra %s no arquivo %s mas o arquivo não foi encontrado!\n", busca, nomeArquivo);
 			exit(1);
 	}else{
-			while(!feof(file)){
-					//fgets(texto,50, (FILE*) file); isso daqui pega o \n tbm..
+			while(!feof(file)){					
 					fscanf(file, " %[^\n]", texto);
 					if(strcmp(texto, busca) == 0){
 							free(texto);
@@ -866,6 +860,17 @@ void exibirArquivo(char *nomeDoArquivo){// função que mostra um arquivo na tel
 void sairDoJogo(Jogo *jogo){
 		system(CLS);
 		exibirArquivo("templates/texto_final");
+		printf("\n");
 		free(jogo);
 		exit(0);
+}
+char getchPersonalizado(){
+	char c = toupper(getch());
+	if(c == KEY_H){
+		system(CLS);	
+		exibirArquivo("templates/help");
+		printf("\n");
+		getch();
+	}
+	return c;	
 }
