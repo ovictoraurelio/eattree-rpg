@@ -74,7 +74,7 @@ void exibirTelaEmbate(Jogo *jogo, Personagem *monstroEmbate);
 void iniciarJogo(Jogo *atual);
 int iniciarEmbate(Jogo *atual);
 int move(int w, int x, int y, int z, int e);
-void movimentarPersonagem(int x, int y, Personagem* personagem, Jogo *jogo, int tamanhoMapa, int monstro);
+void movimentarPersonagem(int x, int y, Personagem* personagem, Jogo* jogo, int tamanhoMapa, int monstro, int *HP);
 char getchPersonalizado();
 char pegarOpcaoMenu(char *nomeArquivoDeMenu);
 void posicionarPersonagem(Personagem *personagem, int x, int y);
@@ -326,7 +326,7 @@ void desenharMapa(Jogo *jogo, int *rodada){
 		}
 		printf("\n");
 	}
-	printf("\nRodada: %d\nPontuacao: %d\nVida: %d", *rodada,jogo->pontuacao, jogo->heroi->vida);
+	printf("\nRodada: %d\nPontuacao: %d\nVida: %d\n", *rodada,jogo->pontuacao, jogo->heroi->vida);
 }
 int move(int w, int x, int y, int z, int e){
 	if (w == 0 || x == 0 || y == 0 || z == 0 || e == 0)
@@ -334,7 +334,7 @@ int move(int w, int x, int y, int z, int e){
 	else
 		return ((((w+x+e)*y)/z) + move(w-1,x-1,y-1,z-1,e))%5;
 }
-void movimentarPersonagem(int x, int y, Personagem* personagem, Jogo* jogo, int tamanhoMapa, int monstro){
+void movimentarPersonagem(int x, int y, Personagem* personagem, Jogo* jogo, int tamanhoMapa, int monstro, int *HP){
 	int podeMovimentar=0;
 	if(monstro == 0)// Monstro 0 é o heroi!
 		podeMovimentar = 1;
@@ -349,6 +349,11 @@ void movimentarPersonagem(int x, int y, Personagem* personagem, Jogo* jogo, int 
 	if(podeMovimentar){
 		personagem->x = x;
 		personagem->y = y;
+		if (monstro == 0) {
+			personagem->vida = personagem->vida + ((*HP)*0.1);
+			if (personagem->vida > *HP)
+				personagem->vida = *HP;
+		}
 	}
 }
 int range(int w, int x, int y, int z){
@@ -374,26 +379,26 @@ void telaPreJogo(Jogo *jogo){
 		}
 		if(jogo->heroi != NULL && jogo->mapa != NULL && jogo->monstros != NULL){
 				exibirArquivo("templates/jogo_carregado");
-				printf("\nMapa selecionado: %s",jogo->nomeMapa);
+				printf("\nMapa selecionado: %s\n",jogo->nomeMapa);
 				printf("\nPacote de personagens selecionado: %s\n",jogo->nomePacotePersonagens);
 				delay(2000);// Espera 2 segundos
 				iniciarJogo(jogo);
 		}else{
-				printf("\nProblemas ao carregar o jogo!");
+				printf("\nProblemas ao carregar o jogo!\n");
 				exit(1);
 		}
 }
 void exibirTelaEmbate(Jogo *jogo, Personagem *monstroEmbate){
 	system(CLS);
 	exibirArquivo("templates/fight_frame");
-	printf("Heroi: %s\nAtaque: %d\nDefesa: %d\nVida: %d\n\n\nMonstro: %s\nAtaque: %d\nDefesa: %d\nVida: %d",jogo->heroi->nome, jogo->heroi->ataque, jogo->heroi->defesa, jogo->heroi->vida, monstroEmbate->nome,monstroEmbate->ataque,monstroEmbate->defesa, monstroEmbate->vida);
+	printf("Heroi: %s\nAtaque: %d\nDefesa: %d\nVida: %d\n\n\nMonstro: %s\nAtaque: %d\nDefesa: %d\nVida: %d \n",jogo->heroi->nome, jogo->heroi->ataque, jogo->heroi->defesa, jogo->heroi->vida, monstroEmbate->nome,monstroEmbate->ataque,monstroEmbate->defesa, monstroEmbate->vida);
 }
 int validarVidaPersonagens(Jogo *jogo){
 	return jogo->heroi->vida > 0 && (jogo->monstros[0].vida > 0 || jogo->monstros[1].vida > 0  || jogo->monstros[2].vida > 0 || jogo->monstros[3].vida > 0);
 }
 void iniciarJogo(Jogo *jogo){
 	 	char teclaPressionada;
-		int rodada=0, metadeTamanho = jogo->tamanho/2, i = 0, novoX, novoY, movimento, continuarAposEmbate = 1;
+		int rodada=0, metadeTamanho = jogo->tamanho/2, i = 0, novoX, novoY, movimento, continuarAposEmbate = 1, HP_max = jogo->heroi->vida;
 		posicionarPersonagem(jogo->heroi, metadeTamanho, metadeTamanho);
 		posicionarPersonagem(&jogo->monstros[0], metadeTamanho/2, metadeTamanho/2);
 		posicionarPersonagem(&jogo->monstros[1], metadeTamanho/2 + metadeTamanho, metadeTamanho/2);
@@ -411,7 +416,7 @@ void iniciarJogo(Jogo *jogo){
 				novoX = jogo->heroi->x;
 				novoY = jogo->heroi->y;
 				definirNovaPosicaoNoMapa(teclaPressionada, &novoX, &novoY, &jogo->tamanho, jogo->heroi->vida);
-				movimentarPersonagem(novoX, novoY, jogo->heroi, jogo, jogo->tamanho, 0);
+				movimentarPersonagem(novoX, novoY, jogo->heroi, jogo, jogo->tamanho, 0, &HP_max);
 				if(jogo->mapa[novoY][novoX] == '*'){
 					jogo->pontuacao+=20;
 					jogo->mapa[novoY][novoX] = ' ';
@@ -424,7 +429,7 @@ void iniciarJogo(Jogo *jogo){
 						novoX = jogo->monstros[i].x;
 						novoY = jogo->monstros[i].y;
 						definirNovaPosicaoNoMapa(movimento, &novoX, &novoY, &jogo->tamanho, jogo->monstros[i].vida);
-						movimentarPersonagem(novoX, novoY, &jogo->monstros[i], jogo, jogo->tamanho, i+1);
+						movimentarPersonagem(novoX, novoY, &jogo->monstros[i], jogo, jogo->tamanho, i+1, 0);
 					}
 				}
 				if(continuarAposEmbate){ // para não desenhar após reiniciar o jogo..
@@ -451,11 +456,12 @@ int iniciarEmbate(Jogo *jogo){
 				
 				jogo->pontuacao += jogo->heroi->ataque + rangeAtaqueHeroi;
 				jogo->heroi->vida = jogo->heroi->vida > 0 ? jogo->heroi->vida : 0;
-				monstroEmbate->vida = monstroEmbate->vida > 0 ? monstroEmbate->vida : 0;
+				monstroEmbate->vida = monstroEmbate->vida > 0 ? monstroEmbate->vida : 0;				
 				exibirTelaEmbate(jogo, monstroEmbate);
-				printf("\n\nAgora eh sua vez %s de atacar: ", jogo->heroi->nome);
+				printf("\nAgora eh sua vez %s de atacar:\n", jogo->heroi->nome);
 		}
-	}	
+	}
+	system(CLS);
 	if(monstroEmbate->vida == 0){
 		posicionarPersonagem(monstroEmbate, -1, -1);
 		return 1;
