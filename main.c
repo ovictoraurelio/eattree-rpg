@@ -72,7 +72,7 @@ void definirNovaPosicaoNoMapa(int teclaPressionada, int *x, int *y, int *tamanho
 void exibirMenu(char *arquivoDeMenu, char *ultimo, char *opcao);
 void exibirTelaEmbate(Jogo *jogo, Personagem *monstroEmbate);
 void iniciarJogo(Jogo *atual);
-int iniciarEmbate(Jogo *atual);
+int iniciarEmbate(Jogo *atual, int *contador);
 int move(int w, int x, int y, int z, int e);
 void movimentarPersonagem(int x, int y, Personagem* personagem, Jogo* jogo, int tamanhoMapa, int monstro, int *HP);
 char getchPersonalizado();
@@ -184,7 +184,7 @@ char pegarOpcaoMenu(char *nomeArquivoDeMenu){
 		if(opcao == KEY_H){ // garantir que após a tela de ajuda, ele redesenha o menu.
 			opcao = ultimo == 'W' ? 'S' : 'W';				
 		}
-		if(ultimo != opcao && (opcao == 'W' || opcao == 'S')){// Só vai redezenhar se ele realmente alternar entre as posições...
+		if(ultimo != opcao && (opcao == 'W' || opcao == 'S')){// Só vai redesenhar se ele realmente alternar entre as posições...
 			system(CLS);
 			exibirMenu(nomeArquivoDeMenu, &ultimo, &opcao);
 		}
@@ -397,6 +397,7 @@ int validarVidaPersonagens(Jogo *jogo){
 	return jogo->heroi->vida > 0 && (jogo->monstros[0].vida > 0 || jogo->monstros[1].vida > 0  || jogo->monstros[2].vida > 0 || jogo->monstros[3].vida > 0);
 }
 void iniciarJogo(Jogo *jogo){
+		int count = 0;
 	 	char teclaPressionada;
 		int rodada=0, metadeTamanho = jogo->tamanho/2, i = 0, novoX, novoY, movimento, continuarAposEmbate = 1, HP_max = jogo->heroi->vida;
 		posicionarPersonagem(jogo->heroi, metadeTamanho, metadeTamanho);
@@ -421,7 +422,7 @@ void iniciarJogo(Jogo *jogo){
 					jogo->pontuacao+=20;
 					jogo->mapa[novoY][novoX] = ' ';
 				}else if(buscarMonstroEmbate(jogo) != NULL){
-					continuarAposEmbate = iniciarEmbate(jogo);
+					continuarAposEmbate = iniciarEmbate(jogo,&count);
 				}
 				for (i = 0; i < 4; i++){
 					if(jogo->monstros[i].vida > 0){
@@ -440,7 +441,7 @@ void iniciarJogo(Jogo *jogo){
 			}
 		}
 }
-int iniciarEmbate(Jogo *jogo){
+int iniciarEmbate(Jogo *jogo, int *contador){
 	int i, jogada, rangeAtaqueHeroi;
 	Personagem *monstroEmbate;
 	monstroEmbate = buscarMonstroEmbate(jogo);
@@ -464,9 +465,25 @@ int iniciarEmbate(Jogo *jogo){
 	system(CLS);
 	if(monstroEmbate->vida == 0){
 		posicionarPersonagem(monstroEmbate, -1, -1);
-		return 1;
+		*contador += 1;
+		printf("You Win!\nContador: %d\n", *contador);
+		if (*contador == 4) {
+			switch(pegarOpcaoMenu("templates/you_win")){
+			case 'W':
+				jogo->pontuacao=0;
+				carregarPersonagensParaOJogo(jogo);
+				carregarMapaParaOJogo(jogo);				
+			break;
+			case 'S':
+				jogo->continuarExecutandoJogo = 0;
+			break;
+			default: break;
+			}
+		}
+		system("pause");
 	}
-	if(jogo->heroi->vida == 0){		
+		return 1;
+	if(jogo->heroi->vida <= 0){		
 		switch(pegarOpcaoMenu("templates/game_over")){
 			case 'W':
 				jogo->pontuacao=0;
