@@ -198,9 +198,8 @@ char pegarOpcaoMenu(char *nomeArquivoDeMenu){
 	return ultimo;
 }
 void exibirMenu(char **conteudo, int numeroDeLinhas, char *ultimo, char *opcao){
-	int i;
+	int i;	
 	for(i=2; i<numeroDeLinhas; i++){
-			if(i<2){
 				//ANTES DE TUDO, vai escanear apenas as duas primeiras palavras do Arquivo!!
 				// PALAVRA 0 E PALAVRA 1 serão as palavras que representam as opções disponiveis no menu.
 				// As próximas linhas de leitura
@@ -215,8 +214,7 @@ void exibirMenu(char **conteudo, int numeroDeLinhas, char *ultimo, char *opcao){
 					alterarCaracterPrePalavra(conteudo[i], conteudo[1], '>');
 				}
 				printf("%s", conteudo[i]);
-			}
-		}
+	}
 }
 
 /***-----------------------------------------------------------------
@@ -870,19 +868,24 @@ void exibirArquivo(char *nomeDoArquivo){// função que mostra um arquivo na tel
 	free(texto);
 }
 char** lerArquivoTexto(char *nomeDoArquivo, char **conteudo, int *numeroDeLinhas){
+	char ch;
 	conteudo = (char**) malloc(sizeof(char*));
+	conteudo[0] = (char*) malloc(sizeof(char) * 251);
 	FILE *file;
 	file = fopen(nomeDoArquivo, "r");
 	if(file == NULL){
 		printf("\n\tArquivo %s nao encontrado!\n", nomeDoArquivo);
 		exit(1);
 	}else{
-			for(*numeroDeLinhas=1; (!feof(file)); *numeroDeLinhas++){
+			for(*numeroDeLinhas=1; (!feof(file)); (*numeroDeLinhas)++){
 				conteudo = (char**) realloc(conteudo, *numeroDeLinhas * sizeof(char*));
 				conteudo[*numeroDeLinhas - 1] = (char*) malloc(sizeof(char) * 251);//assumindo que nenhuma linha terá mais de 250 carcteres
 				fgets(conteudo[*numeroDeLinhas - 1], 250, (FILE*) file);
+				if(*numeroDeLinhas < 3)// para não pegar o '\n'
+					conteudo[*numeroDeLinhas - 1][strlen(conteudo[*numeroDeLinhas-1]) - 1] = '\0';
 			}
 	}
+	fclose(file);
 	return conteudo;
 }
 void sairDoJogo(Jogo *jogo){
