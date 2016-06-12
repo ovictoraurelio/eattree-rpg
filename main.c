@@ -69,7 +69,7 @@ void carregarMapaParaOJogo(Jogo *jogo);
 void carregarPersonagensParaOJogo(Jogo *jogo);
 void desenharMapa(Jogo *jogo, int *rodada);
 void definirNovaPosicaoNoMapa(int teclaPressionada, int *x, int *y, int *tamanhoMapa, int vidaPersonagem);
-void exibirMenu(char *arquivoDeMenu, char *ultimo, char *opcao);
+void exibirMenu(char **conteudo, int numeroDeLinhas, char *ultimo, char *opcao);
 void exibirTelaEmbate(Jogo *jogo, Personagem *monstroEmbate);
 void iniciarJogo(Jogo *atual);
 int iniciarEmbate(Jogo *atual);
@@ -92,6 +92,7 @@ int buscarNomeEmArquivo(char *busca, char *nomeArquivo);
 void criarPacotePersonagens(char *nomePacotePersonagens, Personagem *heroi, Personagem *monstros);
 void criarMapa (char* name);
 void exibirArquivo(char *nomeDoArquivo);
+char** lerArquivoTexto(char *nomeDoArquivo, char **conteudo, int *numeroDeLinhas);
 void listarPersonagens();
 void listarMapas();
 void salvarMapaNoIndex(char *nomeDoMapa);
@@ -111,14 +112,14 @@ int main(int argc, char const *argv[]){
 			exibirArquivo("templates/bem_vindo");
 			getchPersonalizado();
 		}
-		switch(pegarOpcaoMenu("templates/tela_inicial")){// De acordo com a opção que o menu retornar
+		switch(pegarOpcaoMenu("templates/menu_tela_inicial")){// De acordo com a opção que o menu retornar
 			case 'W': //Caso seja selecionada a primeira opção do menu
 				telaPreJogo(jogoAtual);
 			break;
 			case 'S': //Caso seja selecionada a opção de baixo do menu (GAME OPTIONS)
-				switch(pegarOpcaoMenu("templates/game_options")){
+				switch(pegarOpcaoMenu("templates/menu_opcoes_jogo")){
 					case 'W': // CONFIGURAÇÕES DOS MAPAS
-						switch(pegarOpcaoMenu("templates/map_options")){
+						switch(pegarOpcaoMenu("templates/menu_mapa")){
 							case 'W': //SELECIONAR UM MAPA
 								telaSelecionarMapa(jogoAtual);
 							break;
@@ -129,7 +130,7 @@ int main(int argc, char const *argv[]){
 						};
 					break;
 					case 'S': // CONFIGURAÇÕES DE PERSONAGENS
-						switch(pegarOpcaoMenu("templates/characters_options")){
+						switch(pegarOpcaoMenu("templates/menu_personagens")){
 							case 'W': //SELECIONAR UM PERSONAGEM
 								telaSelecionarPacoteDePersonagens(jogoAtual);
 							break;
@@ -179,14 +180,16 @@ int main(int argc, char const *argv[]){
 	*
 ***/
 char pegarOpcaoMenu(char *nomeArquivoDeMenu){
-	char ultimo='S', opcao='W';
+	char ultimo='S', opcao='W', **conteudo;
+	int numeroDeLinhas;
+	conteudo = lerArquivoTexto(nomeArquivoDeMenu, conteudo, &numeroDeLinhas);
 	do{
 		if(opcao == KEY_H){ // garantir que após a tela de ajuda, ele redesenha o menu.
 			opcao = ultimo == 'W' ? 'S' : 'W';
 		}
 		if(ultimo != opcao && (opcao == 'W' || opcao == 'S')){// Só vai redesenhar se ele realmente alternar entre as posições...
 			system(CLS);
-			exibirMenu(nomeArquivoDeMenu, &ultimo, &opcao);
+			exibirMenu(conteudo, numeroDeLinhas, &ultimo, &opcao);
 		}
 	}while((opcao = getchPersonalizado()) && opcao != KEY_ENTER && opcao != CTRL_C);
 	if(opcao == CTRL_C){
@@ -194,44 +197,26 @@ char pegarOpcaoMenu(char *nomeArquivoDeMenu){
 	}
 	return ultimo;
 }
-void exibirMenu(char *nomeArquivoDeMenu, char *ultimo, char *opcao){
+void exibirMenu(char **conteudo, int numeroDeLinhas, char *ultimo, char *opcao){
 	int i;
-	char *texto, **palavras;
-	palavras = (char**) malloc(sizeof(char) * 2);
-	palavras[0] = (char*) malloc(sizeof(char) * 51);
-	palavras[1] = (char*) malloc(sizeof(char) * 51);
-	texto = (char*) malloc(sizeof(char) * 251);
-	FILE *file = fopen(nomeArquivoDeMenu, "r");
-	if(file == NULL){
-		printf("\n\tArquivo %s nao encontrado!\n", nomeArquivoDeMenu);
-		exit(1);
-	}else{
-		for(i=0; (!feof(file)); i++){
-			if(i==0){
+	for(i=2; i<numeroDeLinhas; i++){
+			if(i<2){
 				//ANTES DE TUDO, vai escanear apenas as duas primeiras palavras do Arquivo!!
 				// PALAVRA 0 E PALAVRA 1 serão as palavras que representam as opções disponiveis no menu.
-				fscanf((FILE*) file, " %s", palavras[0]);
-				fscanf((FILE*) file, " %s", palavras[1]);
-			}else{
 				// As próximas linhas de leitura
 				//Temos as duas primeiras palavras escaneadas, sabemos diretamente do menu quem deve ser a opção de cima e a opção de baixo.
-				fgets(texto, 250, (FILE*) file);
 				if(*opcao == 'W'){
 					*ultimo = 'W';
-					alterarCaracterPrePalavra(texto, palavras[0], '>');
-					alterarCaracterPrePalavra(texto, palavras[1], ' ');
+					alterarCaracterPrePalavra(conteudo[i], conteudo[0], '>');
+					alterarCaracterPrePalavra(conteudo[i], conteudo[1], ' ');
 				}else if(*opcao == 'S'){
 					*ultimo = 'S';
-					alterarCaracterPrePalavra(texto, palavras[0], ' ');
-					alterarCaracterPrePalavra(texto, palavras[1], '>');
+					alterarCaracterPrePalavra(conteudo[i], conteudo[0], ' ');
+					alterarCaracterPrePalavra(conteudo[i], conteudo[1], '>');
 				}
-				printf("%s", texto);
+				printf("%s", conteudo[i]);
 			}
 		}
-	}
-	free(texto);
-	free(palavras);
-	fclose(file);
 }
 
 /***-----------------------------------------------------------------
@@ -390,7 +375,7 @@ void telaPreJogo(Jogo *jogo){
 }
 void exibirTelaEmbate(Jogo *jogo, Personagem *monstroEmbate){
 	system(CLS);
-	exibirArquivo("templates/fight_frame");
+	exibirArquivo("templates/telha_batalha");
 	printf("Heroi: %s\nAtaque: %d\nDefesa: %d\nVida: %d\n\n\nMonstro: %s\nAtaque: %d\nDefesa: %d\nVida: %d \n",jogo->heroi->nome, jogo->heroi->ataque, jogo->heroi->defesa, jogo->heroi->vida, monstroEmbate->nome,monstroEmbate->ataque,monstroEmbate->defesa, monstroEmbate->vida);
 }
 int validarVidaPersonagens(Jogo *jogo){
@@ -433,7 +418,7 @@ void iniciarJogo(Jogo *jogo){
 					}
 				}
 				if(jogo->monstros[0].vida == 0 && jogo->monstros[1].vida == 0  && jogo->monstros[2].vida == 0 && jogo->monstros[3].vida == 0){
-						switch(pegarOpcaoMenu("templates/you_win")){
+						switch(pegarOpcaoMenu("templates/menu_voce_venceu")){
 							case 'W':
 								jogo->pontuacao=0;
 								carregarPersonagensParaOJogo(jogo);
@@ -479,7 +464,7 @@ int iniciarEmbate(Jogo *jogo){
 	system(CLS);
 	if(monstroEmbate->vida == 0){
 		posicionarPersonagem(monstroEmbate, -1, -1);
-		exibirArquivo("templates/you_kill_monster");
+		exibirArquivo("templates/derrotou_monstro");
 		printf("********************************************************************************\n");
 		printf("\t\t\t\t%s\n",monstroEmbate->nome);
 		printf("********************************************************************************\n");
@@ -488,7 +473,7 @@ int iniciarEmbate(Jogo *jogo){
 		return 1;
 	}
 	if(jogo->heroi->vida <= 0){
-		switch(pegarOpcaoMenu("templates/game_over")){
+		switch(pegarOpcaoMenu("templates/menu_perdeu_jogo")){
 			case 'W':
 				jogo->pontuacao=0;
 				carregarPersonagensParaOJogo(jogo);
@@ -884,18 +869,35 @@ void exibirArquivo(char *nomeDoArquivo){// função que mostra um arquivo na tel
 	fclose(file);
 	free(texto);
 }
+char** lerArquivoTexto(char *nomeDoArquivo, char **conteudo, int *numeroDeLinhas){
+	conteudo = (char**) malloc(sizeof(char*));
+	FILE *file;
+	file = fopen(nomeDoArquivo, "r");
+	if(file == NULL){
+		printf("\n\tArquivo %s nao encontrado!\n", nomeDoArquivo);
+		exit(1);
+	}else{
+			for(*numeroDeLinhas=1; (!feof(file)); *numeroDeLinhas++){
+				conteudo = (char**) realloc(conteudo, *numeroDeLinhas * sizeof(char*));
+				conteudo[*numeroDeLinhas - 1] = (char*) malloc(sizeof(char) * 251);//assumindo que nenhuma linha terá mais de 250 carcteres
+				fgets(conteudo[*numeroDeLinhas - 1], 250, (FILE*) file);
+			}
+	}
+	return conteudo;
+}
 void sairDoJogo(Jogo *jogo){
 		system(CLS);
-		exibirArquivo("templates/texto_final");
+		exibirArquivo("templates/tela_final");
 		printf("\n");
 		free(jogo);
+		delay(1500);
 		exit(0);
 }
 char getchPersonalizado(){
 	char c = toupper(getch());
 	if(c == KEY_H){
 		system(CLS);
-		exibirArquivo("templates/help");
+		exibirArquivo("templates/ajuda");
 		printf("\n");
 		getch();
 	}
