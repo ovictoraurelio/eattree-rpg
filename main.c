@@ -198,12 +198,11 @@ char pegarOpcaoMenu(char *nomeArquivoDeMenu){
 	return ultimo;
 }
 void exibirMenu(char **conteudo, int numeroDeLinhas, char *ultimo, char *opcao){
-	int i;	
+	int i;
 	for(i=2; i<numeroDeLinhas; i++){
-				//ANTES DE TUDO, vai escanear apenas as duas primeiras palavras do Arquivo!!
-				// PALAVRA 0 E PALAVRA 1 serão as palavras que representam as opções disponiveis no menu.
-				// As próximas linhas de leitura
-				//Temos as duas primeiras palavras escaneadas, sabemos diretamente do menu quem deve ser a opção de cima e a opção de baixo.
+				//Temos as duas primeiras palavras escaneadas,
+				//sabemos diretamente do menu quem deve ser a opção de cima e a opção de baixo.
+				//conteudo[0] - primeira palavra. conteudo[1] - segunda palavra.
 				if(*opcao == 'W'){
 					*ultimo = 'W';
 					alterarCaracterPrePalavra(conteudo[i], conteudo[0], '>');
@@ -369,7 +368,7 @@ void telaPreJogo(Jogo *jogo){
 }
 void exibirTelaEmbate(Jogo *jogo, Personagem *monstroEmbate){
 	system(CLS);
-	exibirArquivo("templates/telha_batalha");
+	exibirArquivo("templates/tela_batalha");
 	printf("Heroi: %s\nAtaque: %d\nDefesa: %d\nVida: %d\n\n\nMonstro: %s\nAtaque: %d\nDefesa: %d\nVida: %d \n",jogo->heroi->nome, jogo->heroi->ataque, jogo->heroi->defesa, jogo->heroi->vida, monstroEmbate->nome,monstroEmbate->ataque,monstroEmbate->defesa, monstroEmbate->vida);
 }
 int validarVidaPersonagens(Jogo *jogo){
@@ -883,12 +882,12 @@ char** lerArquivoTexto(char *nomeDoArquivo, char **conteudo, int *numeroDeLinhas
 		printf("\n\tArquivo %s nao encontrado!\n", nomeDoArquivo);
 		exit(1);
 	}else{
-			for(*numeroDeLinhas=1; (!feof(file)); (*numeroDeLinhas)++){
-				conteudo = (char**) realloc(conteudo, *numeroDeLinhas * sizeof(char*));
-				conteudo[*numeroDeLinhas - 1] = (char*) malloc(sizeof(char) * 251);//assumindo que nenhuma linha terá mais de 250 carcteres
-				fgets(conteudo[*numeroDeLinhas - 1], 250, (FILE*) file);
-				if(*numeroDeLinhas < 3)// para não pegar o '\n'
-					conteudo[*numeroDeLinhas - 1][strlen(conteudo[*numeroDeLinhas-1]) - 1] = '\0';
+			for(*numeroDeLinhas=0; (!feof(file)); (*numeroDeLinhas)++){
+				conteudo = (char**) realloc(conteudo, (*numeroDeLinhas + 1) * sizeof(char*));
+				conteudo[*numeroDeLinhas] = (char*) malloc(sizeof(char) * 251);//assumindo que nenhuma linha terá mais de 250 carcteres
+				fgets(conteudo[*numeroDeLinhas], 250, (FILE*) file);
+				if(*numeroDeLinhas < 2)// para não pegar o '\n'
+					conteudo[*numeroDeLinhas][strlen(conteudo[*numeroDeLinhas]) - 1] = '\0';
 			}
 	}
 	fclose(file);
