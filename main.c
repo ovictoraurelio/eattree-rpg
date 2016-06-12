@@ -466,8 +466,8 @@ int iniciarEmbate(Jogo *jogo, int *contador){
 	if(monstroEmbate->vida == 0){
 		posicionarPersonagem(monstroEmbate, -1, -1);
 		*contador += 1;
-		printf("You Win!\nContador: %d\n", *contador);
 		if (*contador == 4) {
+			*contador = 0;
 			switch(pegarOpcaoMenu("templates/you_win")){
 			case 'W':
 				jogo->pontuacao=0;
@@ -480,7 +480,6 @@ int iniciarEmbate(Jogo *jogo, int *contador){
 			default: break;
 			}
 		}
-		system("pause");
 	}
 		return 1;
 	if(jogo->heroi->vida <= 0){		
