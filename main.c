@@ -341,12 +341,7 @@ void movimentarPersonagem(int x, int y, Personagem* personagem, Jogo* jogo, int 
 		}
 	}
 }
-int range(int w, int x, int y, int z){
-	if (w == 0 || x == 0|| y == 0|| z == 0)
-		return 0;
-	else
-		return (((w + x)*y/(z + 1)) + range(z-10,w-10,x-10,y-10))%30;
-}
+
 void posicionarPersonagem(Personagem *personagem, int x, int y){
 	personagem->x = x;
 	personagem->y = y;
@@ -356,12 +351,13 @@ void telaPreJogo(Jogo *jogo){
 		system(CLS);
 		if(strcmp(jogo->heroi->nome, "") == 0){ // Heroi sempre vai estar alocado.. Porém se tivermos carregado um pacote de personagens teremos um nome para o heroi
 				jogo->nomePacotePersonagens = "default";
-				carregarPersonagensParaOJogo(jogo);
 		}
 		if(jogo->mapa == NULL){
 				jogo->nomeMapa = "default";
-				carregarMapaParaOJogo(jogo);
 		}
+		jogo->pontuacao=0;
+		carregarPersonagensParaOJogo(jogo);
+		carregarMapaParaOJogo(jogo);
 		if(jogo->heroi != NULL && jogo->mapa != NULL && jogo->monstros != NULL){
 				exibirArquivo("templates/jogo_carregado");
 				printf("\nMapa selecionado: %s\n",jogo->nomeMapa);
@@ -420,9 +416,6 @@ void iniciarJogo(Jogo *jogo){
 				if(jogo->monstros[0].vida == 0 && jogo->monstros[1].vida == 0  && jogo->monstros[2].vida == 0 && jogo->monstros[3].vida == 0){
 						switch(pegarOpcaoMenu("templates/menu_voce_venceu")){
 							case 'W':
-								jogo->pontuacao=0;
-								carregarPersonagensParaOJogo(jogo);
-								carregarMapaParaOJogo(jogo);
 								continuarAposEmbate = 0;//para encerrar os loops.
 							break;
 							case 'S':
@@ -440,6 +433,14 @@ void iniciarJogo(Jogo *jogo){
 			}
 		}
 }
+
+int range(int w, int x, int y, int z){
+	if (w <= 0 || x <= 0|| y <= 0|| z <= 0)
+		return 0;
+	else
+		return (((w + x)*y/(z + 1)) + range(z-10,w-10,x-10,y-10))%30;
+}
+
 int iniciarEmbate(Jogo *jogo){
 	int i, jogada, rangeAtaqueHeroi;
 	Personagem *monstroEmbate;
@@ -466,7 +467,7 @@ int iniciarEmbate(Jogo *jogo){
 		posicionarPersonagem(monstroEmbate, -1, -1);
 		exibirArquivo("templates/derrotou_monstro");
 		printf("********************************************************************************\n");
-		printf("\t\t\t\t%s\n",monstroEmbate->nome);
+		printf("\t\t\t\t %s\n",monstroEmbate->nome);
 		printf("********************************************************************************\n");
 		printf("********************************************************************************\n");
 		delay(1500);
@@ -475,9 +476,7 @@ int iniciarEmbate(Jogo *jogo){
 	if(jogo->heroi->vida <= 0){
 		switch(pegarOpcaoMenu("templates/menu_perdeu_jogo")){
 			case 'W':
-				jogo->pontuacao=0;
-				carregarPersonagensParaOJogo(jogo);
-				carregarMapaParaOJogo(jogo);
+				return 0;
 			break;
 			case 'S':
 				jogo->continuarExecutandoJogo = 0;
@@ -683,10 +682,14 @@ void carregarMapaParaOJogo(Jogo *jogo){
 void telaSelecionarPacoteDePersonagens(Jogo *jogo){
 		system(CLS);
 		listarPersonagens();
-		printf("\n\nDigite o nome do personagem que deseja selecionar:\n");
+		printf("\n\nDigite o nome do pacote personagem que deseja selecionar:\n");
+		//fflush(stdin);
+		//printf("oiiiiiii\n");
+		//printf("|%s|\n",jogo->nomePacotePersonagens );
 		scanf(" %50s", jogo->nomePacotePersonagens);
+		//printf("oiiiiiii\n");
 		while(buscarNomeEmArquivo(jogo->nomePacotePersonagens, "personagens.txt") == 0){
-			printf("\nNome informado nao esta na lista!\nDigite o nome do personagem que deseja selecionar:\n");
+			printf("\nNome informado nao esta na lista!\nDigite o nome do pacote personagem que deseja selecionar:\n");
 			scanf(" %50s", jogo->nomePacotePersonagens);
 		}
 		carregarPersonagensParaOJogo(jogo);
@@ -773,6 +776,7 @@ void listarPersonagens(){
 }
 void carregarPersonagensParaOJogo(Jogo *jogo){
 	char *aux = (char*) malloc(sizeof(char) * 68);
+	printf("entrei\n");
 	int i;
 	strcpy(aux,"personagens/");
 	strcat(aux,jogo->nomePacotePersonagens);
@@ -783,9 +787,11 @@ void carregarPersonagensParaOJogo(Jogo *jogo){
 		exit(1);
 	}else{
 			fread(jogo->heroi, sizeof(Personagem), 1, file);
+			//printf("euuuu\n");
 			for(i=0; i<4; i++){
 				fread(&jogo->monstros[i], sizeof(Personagem), 1, file);
 			}
+			//printf("euuuu\n");
 	}
 	fclose(file);
 	free(aux);
