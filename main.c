@@ -24,7 +24,7 @@
 	#include "getch.h"
 	#define CLS "clear"
 	#define KEY_ENTER 10
-	#define CTRL_C 86 // representa a tecla V porque o ctrl+c no linux, teriamos que usar signal event	
+	#define CTRL_C 86 // representa a tecla V porque o ctrl+c no linux, teriamos que usar signal event
 	void delay( unsigned long ms ){
 	    usleep( ms * 1000 );//micro segundos
 	}
@@ -72,7 +72,7 @@ void definirNovaPosicaoNoMapa(int teclaPressionada, int *x, int *y, int *tamanho
 void exibirMenu(char *arquivoDeMenu, char *ultimo, char *opcao);
 void exibirTelaEmbate(Jogo *jogo, Personagem *monstroEmbate);
 void iniciarJogo(Jogo *atual);
-int iniciarEmbate(Jogo *atual, int *contador);
+int iniciarEmbate(Jogo *atual);
 int move(int w, int x, int y, int z, int e);
 void movimentarPersonagem(int x, int y, Personagem* personagem, Jogo* jogo, int tamanhoMapa, int monstro, int *HP);
 char getchPersonalizado();
@@ -102,8 +102,8 @@ int main(int argc, char const *argv[]){
 	jogoAtual->heroi = (Personagem*) calloc(1,sizeof(Personagem));
 	jogoAtual->monstros = (Personagem*) calloc(4,sizeof(Personagem));
 	jogoAtual->continuarExecutandoJogo=1;
-	jogoAtual->nomePacotePersonagens = (char*) malloc(sizeof(char) * 77);	
-	jogoAtual->nomeMapa = (char*) malloc(sizeof(char) * 61);	
+	jogoAtual->nomePacotePersonagens = (char*) malloc(sizeof(char) * 77);
+	jogoAtual->nomeMapa = (char*) malloc(sizeof(char) * 61);
 	while(jogoAtual->continuarExecutandoJogo > 0){
 		system(CLS);
 		if(jogoAtual->continuarExecutandoJogo == 1){
@@ -176,19 +176,19 @@ int main(int argc, char const *argv[]){
 	*	1 - pegarOpcaoMenu	#Esta retorna qual a opção escolhida pelo usuário no menu.
 	*	2 - exibirMenu		#Esta função exibe o menu e de acordo com a atual posição do cursor
 	*   	 				 ela coloca '>' em cima ou em baixo do texto.
-	*	
+	*
 ***/
 char pegarOpcaoMenu(char *nomeArquivoDeMenu){
 	char ultimo='S', opcao='W';
-	do{		
+	do{
 		if(opcao == KEY_H){ // garantir que após a tela de ajuda, ele redesenha o menu.
-			opcao = ultimo == 'W' ? 'S' : 'W';				
+			opcao = ultimo == 'W' ? 'S' : 'W';
 		}
 		if(ultimo != opcao && (opcao == 'W' || opcao == 'S')){// Só vai redesenhar se ele realmente alternar entre as posições...
 			system(CLS);
 			exibirMenu(nomeArquivoDeMenu, &ultimo, &opcao);
 		}
-	}while((opcao = getchPersonalizado()) && opcao != KEY_ENTER && opcao != CTRL_C);	
+	}while((opcao = getchPersonalizado()) && opcao != KEY_ENTER && opcao != CTRL_C);
 	if(opcao == CTRL_C){
 		return CTRL_C;//vai retornar um case inválido (diferente de w, e de s).. fará com que retorne para o menu principal.
 	}
@@ -397,7 +397,6 @@ int validarVidaPersonagens(Jogo *jogo){
 	return jogo->heroi->vida > 0 && (jogo->monstros[0].vida > 0 || jogo->monstros[1].vida > 0  || jogo->monstros[2].vida > 0 || jogo->monstros[3].vida > 0);
 }
 void iniciarJogo(Jogo *jogo){
-		int count = 0;
 	 	char teclaPressionada;
 		int rodada=0, metadeTamanho = jogo->tamanho/2, i = 0, novoX, novoY, movimento, continuarAposEmbate = 1, HP_max = jogo->heroi->vida;
 		posicionarPersonagem(jogo->heroi, metadeTamanho, metadeTamanho);
@@ -405,10 +404,10 @@ void iniciarJogo(Jogo *jogo){
 		posicionarPersonagem(&jogo->monstros[1], metadeTamanho/2 + metadeTamanho, metadeTamanho/2);
 		posicionarPersonagem(&jogo->monstros[2], metadeTamanho/2, metadeTamanho/2 + metadeTamanho);
 		posicionarPersonagem(&jogo->monstros[3], metadeTamanho/2 + metadeTamanho, metadeTamanho/2 + metadeTamanho);
-		
+
 		system(CLS);
 		desenharMapa(jogo, &rodada);
-		
+
 		while(jogo->continuarExecutandoJogo > 0 && continuarAposEmbate && validarVidaPersonagens(jogo) && teclaPressionada != CTRL_C){
 			while(jogo->continuarExecutandoJogo > 0 && continuarAposEmbate && validarVidaPersonagens(jogo) && ( teclaPressionada = getchPersonalizado() ) && (teclaPressionada=='A' || teclaPressionada=='S' || teclaPressionada=='W' || teclaPressionada=='D') && teclaPressionada != CTRL_C){
 				if(jogo->pontuacao > 0){
@@ -422,7 +421,7 @@ void iniciarJogo(Jogo *jogo){
 					jogo->pontuacao+=20;
 					jogo->mapa[novoY][novoX] = ' ';
 				}else if(buscarMonstroEmbate(jogo) != NULL){
-					continuarAposEmbate = iniciarEmbate(jogo,&count);
+					continuarAposEmbate = iniciarEmbate(jogo);
 				}
 				for (i = 0; i < 4; i++){
 					if(jogo->monstros[i].vida > 0){
@@ -433,15 +432,30 @@ void iniciarJogo(Jogo *jogo){
 						movimentarPersonagem(novoX, novoY, &jogo->monstros[i], jogo, jogo->tamanho, i+1, 0);
 					}
 				}
-				if(continuarAposEmbate){ // para não desenhar após reiniciar o jogo..
-					rodada++;
-					system(CLS);
-					desenharMapa(jogo, &rodada);
+				if(jogo->monstros[0].vida == 0 && jogo->monstros[1].vida == 0  && jogo->monstros[2].vida == 0 && jogo->monstros[3].vida == 0){
+						switch(pegarOpcaoMenu("templates/you_win")){
+							case 'W':
+								jogo->pontuacao=0;
+								carregarPersonagensParaOJogo(jogo);
+								carregarMapaParaOJogo(jogo);
+								continuarAposEmbate = 0;//para encerrar os loops.
+							break;
+							case 'S':
+								jogo->continuarExecutandoJogo = 0; // para encerrar os loops.
+							break;
+							default: break;
+						};
+				}else {
+					if(continuarAposEmbate){ // para não desenhar após reiniciar o jogo..
+						rodada++;
+						system(CLS);
+						desenharMapa(jogo, &rodada);
+					}
 				}
 			}
 		}
 }
-int iniciarEmbate(Jogo *jogo, int *contador){
+int iniciarEmbate(Jogo *jogo){
 	int i, jogada, rangeAtaqueHeroi;
 	Personagem *monstroEmbate;
 	monstroEmbate = buscarMonstroEmbate(jogo);
@@ -450,14 +464,14 @@ int iniciarEmbate(Jogo *jogo, int *contador){
 	while(jogo->heroi->vida > 0 && monstroEmbate->vida > 0 && ((jogada = toupper(getch())) && jogada != 'R')){
 		if(jogada == 'T' && jogo->heroi->vida > 0 && monstroEmbate->vida > 0){
 				rangeAtaqueHeroi = range(jogo->heroi->vida, jogo->heroi->ataque, monstroEmbate->vida, monstroEmbate->ataque);
-				
+
 				monstroEmbate->vida = monstroEmbate->vida - (jogo->heroi->ataque + rangeAtaqueHeroi - monstroEmbate->defesa);
 				jogo->heroi->vida = jogo->heroi->vida - (monstroEmbate->ataque + range(monstroEmbate->vida, monstroEmbate->ataque, jogo->heroi->vida, jogo->heroi->ataque) - jogo->heroi->defesa );
 				//jogo->heroi->vida = jogo->heroi->vida - (monstroEmbate->ataque + rangeAtaqueHeroi - jogo->heroi->defesa );
-				
+
 				jogo->pontuacao += jogo->heroi->ataque + rangeAtaqueHeroi;
 				jogo->heroi->vida = jogo->heroi->vida > 0 ? jogo->heroi->vida : 0;
-				monstroEmbate->vida = monstroEmbate->vida > 0 ? monstroEmbate->vida : 0;				
+				monstroEmbate->vida = monstroEmbate->vida > 0 ? monstroEmbate->vida : 0;
 				exibirTelaEmbate(jogo, monstroEmbate);
 				printf("\nAgora eh sua vez %s de atacar:\n", jogo->heroi->nome);
 		}
@@ -465,30 +479,20 @@ int iniciarEmbate(Jogo *jogo, int *contador){
 	system(CLS);
 	if(monstroEmbate->vida == 0){
 		posicionarPersonagem(monstroEmbate, -1, -1);
-		*contador += 1;
-		printf("You Win!\nContador: %d\n", *contador);
-		if (*contador == 4) {
-			switch(pegarOpcaoMenu("templates/you_win")){
-			case 'W':
-				jogo->pontuacao=0;
-				carregarPersonagensParaOJogo(jogo);
-				carregarMapaParaOJogo(jogo);				
-			break;
-			case 'S':
-				jogo->continuarExecutandoJogo = 0;
-			break;
-			default: break;
-			}
-		}
-		system("pause");
-	}
+		exibirArquivo("templates/you_kill_monster");
+		printf("********************************************************************************\n");
+		printf("\t\t\t\t%s\n",monstroEmbate->nome);
+		printf("********************************************************************************\n");
+		printf("********************************************************************************\n");
+		delay(1500);
 		return 1;
-	if(jogo->heroi->vida <= 0){		
+	}
+	if(jogo->heroi->vida <= 0){
 		switch(pegarOpcaoMenu("templates/game_over")){
 			case 'W':
 				jogo->pontuacao=0;
 				carregarPersonagensParaOJogo(jogo);
-				carregarMapaParaOJogo(jogo);				
+				carregarMapaParaOJogo(jogo);
 			break;
 			case 'S':
 				jogo->continuarExecutandoJogo = 0;
@@ -532,7 +536,7 @@ int iniciarEmbate(Jogo *jogo, int *contador){
 	*
 ***/
 void telaSelecionarMapa(Jogo *jogo){
-	listarMapas();	
+	listarMapas();
 	printf("\nDigite o nome do mapa que deseja selecionar:\n");
 	scanf(" %50s", jogo->nomeMapa);
 	while(buscarNomeEmArquivo(jogo->nomeMapa, "mapas.txt") == 0){
@@ -693,7 +697,7 @@ void carregarMapaParaOJogo(Jogo *jogo){
 ***/
 void telaSelecionarPacoteDePersonagens(Jogo *jogo){
 		system(CLS);
-		listarPersonagens();		
+		listarPersonagens();
 		printf("\n\nDigite o nome do personagem que deseja selecionar:\n");
 		scanf(" %50s", jogo->nomePacotePersonagens);
 		while(buscarNomeEmArquivo(jogo->nomePacotePersonagens, "personagens.txt") == 0){
@@ -714,7 +718,7 @@ void telaCriarPacoteDePersonagens(Jogo *jogo){
 			scanf(" %50s", nomePacotePersonagens);
 		}
 		printf("Digite o nome do heroi\n");
-		scanf(" %[^\n]",jogo->heroi->nome);		
+		scanf(" %[^\n]",jogo->heroi->nome);
 		printf("Digite a quantidade de ataque que o heroi possui: \n");
 		scanf("%d", &jogo->heroi->ataque);
 		printf("Digite a quantidade de defesa que o heroi possui: \n");
@@ -723,7 +727,7 @@ void telaCriarPacoteDePersonagens(Jogo *jogo){
 		scanf("%d", &jogo->heroi->vida);
 		for(i=0; i<4; i++){
 			printf("Digite o nome do monstro %d\n", i+1);
-			scanf(" %[^\n]",jogo->monstros[i].nome);			
+			scanf(" %[^\n]",jogo->monstros[i].nome);
 			printf("Digite a quantidade de ataque que o monstro possui: \n");
 			scanf("%d", &jogo->monstros[i].ataque);
 			printf("Digite a quantidade de defesa que o monstro possui: \n");
@@ -792,7 +796,7 @@ void carregarPersonagensParaOJogo(Jogo *jogo){
 	if(file == NULL){
 		printf("\n\tArquivo %s nao encontrado!\n", aux);
 		exit(1);
-	}else{			
+	}else{
 			fread(jogo->heroi, sizeof(Personagem), 1, file);
 			for(i=0; i<4; i++){
 				fread(&jogo->monstros[i], sizeof(Personagem), 1, file);
@@ -846,7 +850,7 @@ int buscarNomeEmArquivo(char *busca, char *nomeArquivo){
 			printf("\n\nTentando buscar a palavra %s no arquivo %s mas o arquivo não foi encontrado!\n", busca, nomeArquivo);
 			exit(1);
 	}else{
-			while(!feof(file)){					
+			while(!feof(file)){
 					fscanf(file, " %[^\n]", texto);
 					if(strcmp(texto, busca) == 0){
 							free(texto);
@@ -888,12 +892,12 @@ void sairDoJogo(Jogo *jogo){
 		exit(0);
 }
 char getchPersonalizado(){
-	char c = toupper(getch());	
+	char c = toupper(getch());
 	if(c == KEY_H){
-		system(CLS);	
+		system(CLS);
 		exibirArquivo("templates/help");
 		printf("\n");
 		getch();
 	}
-	return c;	
+	return c;
 }
