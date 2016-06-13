@@ -100,12 +100,13 @@ void salvarPersonagemNoIndex(char *nomeDoPersonagem);
 
 int main(int argc, char const *argv[]){
 	Jogo *jogoAtual = (Jogo*) calloc(1,sizeof(Jogo));
-	jogoAtual->heroi = (Personagem*) calloc(1,sizeof(Personagem));
-	jogoAtual->monstros = (Personagem*) calloc(4,sizeof(Personagem));
+	jogoAtual->heroi = NULL;
+	jogoAtual->monstros = NULL;
 	jogoAtual->continuarExecutandoJogo=1;
 	jogoAtual->nomePacotePersonagens = (char*) malloc(sizeof(char) * 77);
 	jogoAtual->nomeMapa = (char*) malloc(sizeof(char) * 61);
 	while(jogoAtual->continuarExecutandoJogo > 0){
+		fflush(stdin);
 		system(CLS);
 		if(jogoAtual->continuarExecutandoJogo == 1){
 			jogoAtual->continuarExecutandoJogo++;
@@ -346,7 +347,8 @@ void posicionarPersonagem(Personagem *personagem, int x, int y){
 
 void telaPreJogo(Jogo *jogo){
 		system(CLS);
-		if(strcmp(jogo->heroi->nome, "") == 0){ // Heroi sempre vai estar alocado.. Porém se tivermos carregado um pacote de personagens teremos um nome para o heroi
+
+		if(jogo->heroi == NULL){ // Heroi sempre vai estar alocado.. Porém se tivermos carregado um pacote de personagens teremos um nome para o heroi
 				jogo->nomePacotePersonagens = "default";
 		}
 		if(jogo->mapa == NULL){
@@ -517,7 +519,9 @@ int iniciarEmbate(Jogo *jogo){
 	*
 ***/
 void telaSelecionarMapa(Jogo *jogo){
+	system(CLS);
 	listarMapas();
+	fflush(stdin);//BUG MEMORY!
 	printf("\nDigite o nome do mapa que deseja selecionar:\n");
 	scanf(" %50s", jogo->nomeMapa);
 	while(buscarNomeEmArquivo(jogo->nomeMapa, "mapas.txt") == 0){
@@ -529,6 +533,7 @@ void telaSelecionarMapa(Jogo *jogo){
 void telaCriarMapa(){
 	system(CLS);
 	char *nomeDoMapa = (char*) malloc(sizeof(char) * 51);
+	fflush(stdin);//BUG MEMORY!
 	printf("\nDigite o nome do mapa(ate 50 caracteres e sem espacos): ");
 	scanf(" %50s", nomeDoMapa);
 	while(buscarNomeEmArquivo(nomeDoMapa, "mapas.txt") > 0){
@@ -587,9 +592,9 @@ void criarMapa(char* nomeDoMapa){
 		}
 		fprintf(arq,"\n");
 	}
-	fclose(arq);
 	free(mapa);
 	free(aux);
+	fclose(arq);
 }
 void salvarMapaNoIndex(char *nomeDoMapa){
 	FILE *file = fopen("mapas.txt", "a");
@@ -597,7 +602,6 @@ void salvarMapaNoIndex(char *nomeDoMapa){
 		printf("\n\tArquivo de mapas nao encontrado!\n");
 		exit(1);
 	}else{
-		system(CLS);
 		fprintf((FILE*) file,"\n");
 		fputs(nomeDoMapa, (FILE*) file);
 	}
@@ -611,15 +615,14 @@ void listarMapas(){
 		printf("\n\tArquivo de mapas nao encontrado!\n");
 		exit(1);
 	}else{
-		system(CLS);
 		printf("\n\nMapas encontrados na base de dados:\n\n");
 		while(!feof(file)){
 			fgets(texto, 50, (FILE*) file);
 			printf("%s", texto);
 		}
 	}
-	fclose(file);
 	free(texto);
+	fclose(file);
 }
 void carregarMapaParaOJogo(Jogo *jogo){
 	int i;
@@ -633,8 +636,9 @@ void carregarMapaParaOJogo(Jogo *jogo){
 		exit(1);
 	}else{
 		fscanf(file, "%d", &jogo->tamanho);
-		if(jogo->mapa != NULL)
+		if(jogo->mapa != NULL){
 			free(jogo->mapa);
+		}
 		jogo->mapa = (char**) malloc(sizeof(char*) * jogo->tamanho);
 		jogo->mapa[0] = (char*) malloc(sizeof(char) * 300);//quebra de linha após o inteiro
 		fgets(jogo->mapa[0], 300, (FILE*) file);
@@ -643,9 +647,9 @@ void carregarMapaParaOJogo(Jogo *jogo){
 			fgets(jogo->mapa[i], 300, (FILE*) file);
 		}
 	}
-	fclose(file);
 	free(texto);
 	free(aux);
+	fclose(file);
 }
 
 /***-----------------------------------------------------------------
@@ -679,12 +683,9 @@ void carregarMapaParaOJogo(Jogo *jogo){
 void telaSelecionarPacoteDePersonagens(Jogo *jogo){
 		system(CLS);
 		listarPersonagens();
+		fflush(stdin);//BUG MEMORY!
 		printf("\n\nDigite o nome do pacote personagem que deseja selecionar:\n");
-		//fflush(stdin);
-		//printf("oiiiiiii\n");
-		//printf("|%s|\n",jogo->nomePacotePersonagens );
 		scanf(" %50s", jogo->nomePacotePersonagens);
-		//printf("oiiiiiii\n");
 		while(buscarNomeEmArquivo(jogo->nomePacotePersonagens, "personagens.txt") == 0){
 			printf("\nNome informado nao esta na lista!\nDigite o nome do pacote personagem que deseja selecionar:\n");
 			scanf(" %50s", jogo->nomePacotePersonagens);
@@ -693,15 +694,21 @@ void telaSelecionarPacoteDePersonagens(Jogo *jogo){
 }
 void telaCriarPacoteDePersonagens(Jogo *jogo){
 		int i;
-		char nomePacotePersonagens[50];
 		system(CLS);
 		printf("Bem vindo a criacao de um novo pacote de personagens!!\n");
+		fflush(stdin);//BUG MEMORY!
 		printf("Digite o nome do pacote de personagens(ate 50 caracteres, sem espacos): \n");
-		scanf(" %50s", nomePacotePersonagens);
-		while(buscarNomeEmArquivo(nomePacotePersonagens, "personagens.txt") > 0){
+		scanf(" %50s", jogo->nomePacotePersonagens);
+		while(buscarNomeEmArquivo(jogo->nomePacotePersonagens, "personagens.txt") > 0){
 			printf("Ja existe um pacote de personagens com este nome, por favor, digite outro: \n");
-			scanf(" %50s", nomePacotePersonagens);
+			scanf(" %50s",  jogo->nomePacotePersonagens);
 		}
+		if(jogo->heroi != NULL){
+				free(jogo->heroi);
+				free(jogo->monstros);
+		}
+		jogo->heroi = (Personagem*) malloc(sizeof(Personagem));
+		jogo->monstros = (Personagem*) malloc(4*sizeof(Personagem));
 		printf("Digite o nome do heroi\n");
 		scanf(" %[^\n]",jogo->heroi->nome);
 		printf("Digite a quantidade de ataque que o heroi possui: \n");
@@ -720,8 +727,8 @@ void telaCriarPacoteDePersonagens(Jogo *jogo){
 			printf("Digite a quantidade de vida que o monstro possui: \n");
 			scanf("%d", &jogo->monstros[i].vida);
 		}
-		salvarPersonagemNoIndex(nomePacotePersonagens);
-		criarPacotePersonagens(nomePacotePersonagens, jogo->heroi, jogo->monstros);
+		salvarPersonagemNoIndex(jogo->nomePacotePersonagens);
+		criarPacotePersonagens(jogo->nomePacotePersonagens, jogo->heroi, jogo->monstros);
 }
 void salvarPersonagemNoIndex(char *nomeDoPersonagem){
 	FILE *file = fopen("personagens.txt", "a");
@@ -751,29 +758,28 @@ void criarPacotePersonagens(char *nomePacotePersonagens, Personagem *heroi, Pers
 				for(i=0; i<4; i++)
 						fwrite(&monstros[i], sizeof(Personagem), 1, file);
 		}
-		fclose(file);
 		free(aux);
+		fclose(file);
 }
 void listarPersonagens(){
 	int i,personagemSelecionado;
-	char texto[50];
+	char *texto = (char*) malloc(sizeof(char) * 50);
 	FILE *file = fopen("personagens.txt", "r");
 	if(file == NULL){
 		printf("\n\tArquivo de personagens nao encontrado!\n");
 		exit(1);
 	}else{
-		system(CLS);
 		printf("\n\nPacotes de personagens encontrados na base de dados:\n\n");
 		while(!feof(file)){
 			fgets(texto, 50, (FILE*) file);
 			printf("%s", texto);
 		}
 	}
+	free(texto);
 	fclose(file);
 }
 void carregarPersonagensParaOJogo(Jogo *jogo){
 	char *aux = (char*) malloc(sizeof(char) * 68);
-	printf("entrei\n");
 	int i;
 	strcpy(aux,"personagens/");
 	strcat(aux,jogo->nomePacotePersonagens);
@@ -783,15 +789,19 @@ void carregarPersonagensParaOJogo(Jogo *jogo){
 		printf("\n\tArquivo %s nao encontrado!\n", aux);
 		exit(1);
 	}else{
+			if(jogo->heroi != NULL){
+					free(jogo->heroi);
+					free(jogo->monstros);
+			}
+			jogo->heroi = (Personagem*) malloc(sizeof(Personagem));
+			jogo->monstros = (Personagem*) malloc(4*sizeof(Personagem));
 			fread(jogo->heroi, sizeof(Personagem), 1, file);
-			//printf("euuuu\n");
 			for(i=0; i<4; i++){
 				fread(&jogo->monstros[i], sizeof(Personagem), 1, file);
 			}
-			//printf("euuuu\n");
 	}
-	fclose(file);
 	free(aux);
+	fclose(file);
 }
 
 /***-----------------------------------------------------------------
