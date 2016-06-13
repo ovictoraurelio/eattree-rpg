@@ -1,0 +1,6 @@
+{
+  "name": "EatTree Rpg if669ec",
+  "tagline": "",
+  "body": "# EAT TREE RPG IF669EC\r\n\r\n\r\nEat Tree RPG é um jogo criado por alunos da turma if669ec, para a cadeira de introdução a programação.\r\n\r\n[Descrição do projeto](http://victoraurelio.com/box/eat_tree_descricao.pdf)\r\n\r\n````\r\n### Alunos:\r\n\r\n- [Bruno Melo] @bmc3\r\n- [Filipe Cumaru] @facsa\r\n- [Rafael Santana]  @arbs\r\n- [Victor Aurélio] @vags\r\n\r\n### Estrutura do projeto:\r\n```sh\r\n\r\nmain.c  Arquivo principal onde acontece toda a mágica do jogo.\r\nmapas.txt Arquivo que lista os mapas que já foram salvos.\r\npersonagens.txt Arquivo que lista os personagens que já foram salvos.\r\ngetch.h código util para utilizar a função getch no linux.\r\nmapas/  Pasta com arquivos que serão listados como mapas para o jogo.\r\npersonagens/ Pasta com arquivos binários que serão listados como arquivos de personagens para o jogo.\r\n_modelo/ Pasta com alguns arquivos enviados pelos monitores.\r\n```\r\n\r\n\r\n[Bruno Melo]: <http://cin.ufpe.br/~bmc3>\r\n[Filipe Cumaru]: <http://cin.ufpe.br/~facsa>\r\n[Rafael Santana]: <http://cin.ufpe.br/~arbs>\r\n[Victor Aurélio]: <http://cin.ufpe.br/~vags>",
+  "note": "Don't delete this file! It's used internally to help with page regeneration."
+}
