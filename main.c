@@ -19,7 +19,7 @@
 #include <time.h>
 #include <ctype.h> // toupper
 #define KEY_H 72
-#ifdef __unix__
+#if defined( __unix__ ) || defined( __APPLE__ )
 	#include <unistd.h>
 	#include "getch.h"
 	#define CLS "clear"
